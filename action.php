@@ -42,7 +42,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
 
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
-        $html = '<p class="policyhint">'.$passpolicy->explainPolicy().'</p>';
+        $html = '<p class="passpolicy_hint">'.$passpolicy->explainPolicy().'</p>';
         $event->data->insertElement(++$pos, $html);
     }
 

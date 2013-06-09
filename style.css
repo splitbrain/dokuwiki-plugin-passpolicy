@@ -1,0 +1,24 @@
+.dokuwiki .passpolicy_hint {
+    font-size: .875em;
+}
+
+.dokuwiki #passpolicy__indicatator {
+    font-weight: bold;
+    text-align: right;
+}
+
+.dokuwiki .passpolicy_strength0 {
+    color: #cd0a0a;
+}
+
+.dokuwiki .passpolicy_strength1 {
+    color: #dd3300;
+}
+
+.dokuwiki .passpolicy_strength2 {
+    color: #66cc66;
+}
+
+.dokuwiki .passpolicy_strength3 {
+    color: #008800;
+}
