@@ -36,6 +36,16 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     /** @var int policy violation error */
     public $error = 0;
 
+    /** @var array the different pools to use when generating passwords */
+    public $pools = array(
+        'lower'   => 'abcdefghijklmnopqrstuvwxyz',
+        'upper'   => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        'numeric' => '0123456789',
+        'special' => '!"$%&/()=?{[]}\\*+~\'#,;.:-_<>|@'
+    );
+
+    protected $wordlist = array();
+    protected $wordlistlength = 0;
 
     const LENGTH_VIOLATION = 1;
     const POOL_VIOLATION = 2;
@@ -196,19 +206,13 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return string
      */
     protected function randomPassword() {
-        $pools            = array();
-        $pools['lower']   = 'abcdefghijklmnopqrstuvwxyz';
-        $pools['upper']   = strtoupper($pools['lower']);
-        $pools['numeric'] = '0123456789';
-        $pools['special'] = '!"$%&/()=?{[]}\\*+~\'#,;.:-_<>|@';
-
         $usablepools = array();
         $pw = '';
         // make sure all char pools are used
         foreach($this->usepools as $pool => $on) {
             if($on){
-                $poollen = strlen($pools[$pool]);
-                $pw .= $pools[$pool][$this->rand(0, $poollen - 1)];
+                $poollen = strlen($this->pools[$pool]);
+                $pw .= $this->pools[$pool][$this->rand(0, $poollen - 1)];
                 $usablepools[] = $pool;
             }
         }
@@ -217,7 +221,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // now fill up
         $poolcnt = count($usablepools);
         for($i = strlen($pw); $i < $this->min_length; $i++) {
-            $pool = $pools[$usablepools[$this->rand(0, $poolcnt-1)]];
+            $pool = $this->pools[$usablepools[$this->rand(0, $poolcnt-1)]];
             $pw .= $pool[$this->rand(0, strlen($pool) - 1)];
         }
 
@@ -259,12 +263,50 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         }
 
         // add a nice numbers and specials
-        if(!empty($this->usepools['numeric'])) $pw .= rand(10, 99);
-        if(!empty($this->usepools['special'])) $pw .= $specials[rand(0, strlen($specials) - 1)];
+        if(!empty($this->usepools['numeric'])) $pw .= $this->rand(10, 99);
+        if(!empty($this->usepools['special'])) $pw .= $specials[$this->rand(0, strlen($specials) - 1)];
 
         return $pw;
     }
 
+    /**
+     * Creates a passphrase from random words
+     *
+     * @author Michael Samuel
+     * @author Solar Designer
+     * @param int $numbits
+     * @return string
+     */
+    protected function random_passphrase($numbits=64) {
+        if($numbits < 24) $numbits = 24;
+        $this->loadwordlist();
+
+        $separators = $this->pool['specials'].$this->pool['numeric'];
+        $seplength = strlen($separators);
+
+        $sepbits = $this->num_bits($seplength);
+        $wordbits = $this->num_bits($this->wordlistlength)
+
+        $output = '';
+        do {
+            $word = $this->wordlist[$this->rand(0, $this->wordlistlength - 1)];
+            if(secure_rand(0, 1)) {
+                $word = ucfirst($word);
+            }
+            $output .= $word;
+            $numbits -= $wordbits;
+
+            if($numbits > 0 || strlen($output) < $this->min_length) {
+                $output .= $separators[$this->rand(0, $seplength - 1)];
+                $numbits -= $sepbits;
+            }
+        } while ($numbits > 0 || strlen($output) < $this->min_length);
+
+        // ensure at least one upper case letter to match policy
+        if($this->usepools['upper']) $output = ucfirst($output);
+
+        return $output;
+    }
 
     /**
      * Return the number of bits in an integer
@@ -307,5 +349,19 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         } while ($integer > $real_max);
 
         return $integer + $min;
+    }
+
+    /**
+     * loads the word list for phrase generation
+     *
+     * 4096 English words for generation of easy to memorize random passphrases.
+     * This list comes from a passphrase generator mentioned on sci.crypt, religious
+     * and possibly offensive words have been replaced with less conflict laden words
+     */
+    protected function loadwordlist(){
+        if($this->wordlistlength) return; //list already loaded
+
+        $this->wordlist = file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
+        $this->wordlistlength = count($this->wordlist);
     }
 }
