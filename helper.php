@@ -46,10 +46,11 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      *
      * Sets the policy from the DokuWiki config
      */
-    public function __construct(){
+    public function __construct() {
         $this->min_length = $this->getConf('minlen');
         $this->min_pools  = $this->getConf('minpools');
         $this->usernamecheck = $this->getConf('user');
+        $this->pronouncable = $this->getConf('pronouncable');
 
         $opts = explode(',',$this->getConf('pools'));
         if(count($opts)){ // ignore empty pool setups
@@ -206,16 +207,18 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // make sure all char pools are used
         foreach($this->usepools as $pool => $on) {
             if($on){
-                $pw .= $pools[$pool][rand(0, strlen($pools[$pool]) - 1)];
+                $poollen = strlen($pools[$pool]);
+                $pw .= $pools[$pool][mt_rand(0, $poollen - 1)];
                 $usablepools[] = $pool;
             }
         }
         if(!$usablepools) return false;
 
         // now fill up
+        $poolcnt = count($usablepools);
         for($i = strlen($pw); $i < $this->min_length; $i++) {
-            $pool = $pools[$usablepools[array_rand($usablepools)]];
-            $pw .= $pool[rand(0, strlen($pool) - 1)];
+            $pool = $pools[$usablepools[mt_rand(0, $poolcnt-1)]];
+            $pw .= $pool[mt_rand(0, strlen($pool) - 1)];
         }
 
         // shuffle to make sure our intial chars are not necessarily at the start
@@ -250,9 +253,9 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // create words
         $pw = '';
         for($i = 0; $i < $syllables; $i++) {
-            $pw .= $first[rand(0, strlen($first) - 1)];
-            $pw .= $vowels[rand(0, strlen($vowels) - 1)];
-            $pw .= $all[rand(0, strlen($all) - 1)];
+            $pw .= $first[mt_rand(0, strlen($first) - 1)];
+            $pw .= $vowels[mt_rand(0, strlen($vowels) - 1)];
+            $pw .= $all[mt_rand(0, strlen($all) - 1)];
         }
 
         // add a nice numbers and specials

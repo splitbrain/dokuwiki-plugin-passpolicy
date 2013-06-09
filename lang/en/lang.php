@@ -11,6 +11,9 @@ $lang['pools']      = 'Your password needs to use characters from at least %d of
 $lang['user1']      = 'Your password may not contain your username.';
 $lang['user2']      = 'Your password may only use %d or less consecutive characters that appear in your username.';
 
-
+$lang['js']['strength0']  = 'very weak';
+$lang['js']['strength1']  = 'weak';
+$lang['js']['strength2']  = 'decent';
+$lang['js']['strength3']  = 'strong';
 
 //Setup VIM: ex: et ts=4 :

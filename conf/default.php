@@ -5,7 +5,8 @@
  * @author Andreas Gohr <andi@splitbrain.org>
  */
 
-$conf['minlen']   = 6;
-$conf['pools']    = 'lower,numeric';
-$conf['minpools'] = 0;
-$conf['user']     = 0;
+$conf['minlen']   = 8;
+$conf['pools']    = 'lower,numeric,special';
+$conf['minpools'] = 2;
+$conf['user']     = 1;
+$conf['pronouncable'] = 0;
