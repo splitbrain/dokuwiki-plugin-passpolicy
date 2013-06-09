@@ -208,7 +208,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         foreach($this->usepools as $pool => $on) {
             if($on){
                 $poollen = strlen($pools[$pool]);
-                $pw .= $pools[$pool][mt_rand(0, $poollen - 1)];
+                $pw .= $pools[$pool][$this->rand(0, $poollen - 1)];
                 $usablepools[] = $pool;
             }
         }
@@ -217,8 +217,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // now fill up
         $poolcnt = count($usablepools);
         for($i = strlen($pw); $i < $this->min_length; $i++) {
-            $pool = $pools[$usablepools[mt_rand(0, $poolcnt-1)]];
-            $pw .= $pool[mt_rand(0, strlen($pool) - 1)];
+            $pool = $pools[$usablepools[$this->rand(0, $poolcnt-1)]];
+            $pw .= $pool[$this->rand(0, strlen($pool) - 1)];
         }
 
         // shuffle to make sure our intial chars are not necessarily at the start
@@ -253,9 +253,9 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // create words
         $pw = '';
         for($i = 0; $i < $syllables; $i++) {
-            $pw .= $first[mt_rand(0, strlen($first) - 1)];
-            $pw .= $vowels[mt_rand(0, strlen($vowels) - 1)];
-            $pw .= $all[mt_rand(0, strlen($all) - 1)];
+            $pw .= $first[$this->rand(0, strlen($first) - 1)];
+            $pw .= $vowels[$this->rand(0, strlen($vowels) - 1)];
+            $pw .= $all[$this->rand(0, strlen($all) - 1)];
         }
 
         // add a nice numbers and specials
@@ -265,4 +265,47 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         return $pw;
     }
 
+
+    /**
+     * Return the number of bits in an integer
+     *
+     * @author Michael Samuel
+     * @param int $number
+     * @return int
+     */
+    protected function num_bits($number) {
+        $bits = 0;
+
+        while($number > 0) {
+            $number >>= 1;
+            $bits += 1;
+        }
+
+        return $bits;
+    }
+
+    /**
+     * Random number generator using the best available source
+     *
+     * @author Michael Samuel
+     * @param int $min
+     * @param int $max
+     * @return int
+     */
+    public function rand($min, $max) {
+        if(!function_exists('openssl_random_pseudo_bytes')){
+            return mt_rand($min, $max);
+        }
+
+        $real_max = $max - $min;
+        $mask = (1 << $this->num_bits($real_max)) - 1;
+
+        do {
+            $bytes = openssl_random_pseudo_bytes(4, $strong);
+            assert($strong);
+            $integer = unpack("lnum", $bytes)["num"] & $mask;
+        } while ($integer > $real_max);
+
+        return $integer + $min;
+    }
 }
