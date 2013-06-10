@@ -77,11 +77,14 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     }
 
     /**
-     * @param $username
+     * Generates a random password according to the backend settings
+     *
+     * @param string $username
+     * @param int $try internal variable, do not set!
+     * @throws Exception when the generator fails to create a policy compliant password
      * @return bool|string
-     * @throws Exception when no password matching the current policy can be created
      */
-    public function generatePassword($username) {
+    public function generatePassword($username, $try=0) {
         if($this->autotype == 'pronouncable') {
             $pw = $this->pronouncablePassword();
             if($pw && $this->checkPolicy($pw, $username)) return $pw;
@@ -95,7 +98,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $pw = $this->randomPassword();
         if($pw && $this->checkPolicy($pw, $username)) return $pw;
 
-        // still here? we have big problem
+        // still here? we might have clashed with the user name by accident
+        if($try < 3) return $this->generatePassword($try++);
+
+        // still here? now we have a real problem
         throw new Exception('can\'t create a random password matching the password policy');
     }
 
@@ -199,27 +205,42 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return string
      */
     protected function randomPassword() {
-        $usablepools = array();
-        $pw          = '';
-        // make sure all char pools are used
-        foreach($this->usepools as $pool => $on) {
-            if($on) {
-                $poollen = strlen($this->pools[$pool]);
-                $pw .= $this->pools[$pool][$this->rand(0, $poollen - 1)];
-                $usablepools[] = $pool;
+        $num_bits   = $this->autobits;
+        $output     = '';
+        $characters = '';
+
+        // always use these pools
+        foreach(array('lower', 'upper', 'numeric') as $pool) {
+            $pool_len = strlen($this->pools[$pool]);
+            $output .= $this->pools[$pool][$this->rand(0, $pool_len - 1)]; // add one char already
+            $characters .= $this->pools[$pool]; // add to full pool
+            $num_bits -= $this->bits($pool_len);
+        }
+
+        // if specials are wanted, limit them to a sane amount of 3
+        if(!empty($this->usepools['special'])) {
+            $pool_len = strlen($this->pools['special']);
+            $poolbits = $this->bits($pool_len);
+
+            $sane = ceil($this->autobits / 25);
+            for($i = 0; $i < $sane; $i++) {
+                $output .= $this->pools['special'][$this->rand(0, $pool_len - 1)];
+                $num_bits -= $poolbits;
             }
         }
-        if(!$usablepools) return false;
 
-        // now fill up
-        $poolcnt = count($usablepools);
-        for($i = strlen($pw); $i < $this->min_length; $i++) {
-            $pool = $this->pools[$usablepools[$this->rand(0, $poolcnt - 1)]];
-            $pw .= $pool[$this->rand(0, strlen($pool) - 1)];
-        }
+        // now prepare the full pool
+        $pool_len = strlen($characters);
+        $poolbits = $this->bits($pool_len);
+
+        // add random chars
+        do {
+            $output .= $characters[$this->rand(0, $pool_len - 1)];
+            $num_bits -= $poolbits;
+        } while($num_bits > 0 || strlen($output) < $this->min_length);
 
         // shuffle to make sure our intial chars are not necessarily at the start
-        return str_shuffle($pw);
+        return str_shuffle($output);
     }
 
     /**
@@ -232,14 +253,14 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
 
         // prepare speakable char classes
         $consonants = 'bcdfghjklmnprstvwz'; //consonants except hard to speak ones
-        $vowels   = 'aeiou';
-        $all      = $consonants.$vowels;
-        $specials = '!$%&=?.-_;,';
+        $vowels     = 'aeiou';
+        $all        = $consonants.$vowels;
+        $specials   = '!$%&=?.-_;,';
 
         // prepare lengths
         $c_len = strlen($consonants);
         $v_len = strlen($vowels);
-        $a_len = $c_len+$v_len;
+        $a_len = $c_len + $v_len;
 
         // prepare bitcounts
         $c_bits = $this->bits($c_len);
@@ -250,7 +271,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $postfix = '';
         if($this->usepools['numeric']) {
             $postfix .= $this->rand(10, 99);
-            $num_bits -= $this->bits(99-10);
+            $num_bits -= $this->bits(99 - 10);
         }
         if($this->usepools['special']) {
             $spec_len = strlen($this->pools['special']);
