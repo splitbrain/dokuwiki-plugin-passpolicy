@@ -228,34 +228,53 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return bool|string  the new password, false on error
      */
     protected function pronouncablePassword() {
+        $num_bits = $this->autobits;
+
         // prepare speakable char classes
         $consonants = 'bcdfghjklmnprstvwz'; //consonants except hard to speak ones
-        $first      = $consonants;
-        if(empty($this->usepools['lower'])) $consonants = strtoupper($consonants);
-        if(!empty($this->usepools['upper'])) $first = strtoupper($consonants); // prefer upper for first syllable letter
         $vowels   = 'aeiou';
         $all      = $consonants.$vowels;
         $specials = '!$%&=?.-_;,';
 
-        // calculate syllable number
-        $len = $this->min_length + 1;
-        if(!empty($this->usepools['numeric'])) $len -= 2; // we add two numbers later
-        if(!empty($this->usepools['special'])) $len -= 1; // we add one special later
-        $syllables = ceil($len / 3);
+        // prepare lengths
+        $c_len = strlen($consonants);
+        $v_len = strlen($vowels);
+        $a_len = $c_len+$v_len;
 
-        // create words
-        $pw = '';
-        for($i = 0; $i < $syllables; $i++) {
-            $pw .= $first[$this->rand(0, strlen($first) - 1)];
-            $pw .= $vowels[$this->rand(0, strlen($vowels) - 1)];
-            $pw .= $all[$this->rand(0, strlen($all) - 1)];
+        // prepare bitcounts
+        $c_bits = $this->bits($c_len);
+        $v_bits = $this->bits($v_len);
+        $a_bits = $this->bits($a_len);
+
+        // prepare policy compliant postfix
+        $postfix = '';
+        if($this->usepools['numeric']) {
+            $postfix .= $this->rand(10, 99);
+            $num_bits -= $this->bits(99-10);
+        }
+        if($this->usepools['special']) {
+            $spec_len = strlen($this->pools['special']);
+            $postfix .= $this->pools['special'][rand(0, $spec_len - 1)];
+            $num_bits -= $this->bits($spec_len);
         }
 
-        // add a nice numbers and specials
-        if(!empty($this->usepools['numeric'])) $pw .= $this->rand(10, 99);
-        if(!empty($this->usepools['special'])) $pw .= $specials[$this->rand(0, strlen($specials) - 1)];
+        // create words
+        $output = '';
+        do {
+            $output .= $consonants[$this->rand(0, $c_len - 1)];
+            $output .= $vowels[$this->rand(0, $v_len - 1)];
+            $output .= $all[$this->rand(0, $a_len - 1)];
 
-        return $pw;
+            $num_bits -= $c_bits;
+            $num_bits -= $v_bits;
+            $num_bits -= $a_bits;
+        } while($num_bits > 0 || strlen($output) < $this->min_length);
+
+        // now ensure policy compliance by uppercasing and postfixing
+        if($this->usepools['upper']) $output = ucfirst($output);
+        if($postfix) $output .= $postfix;
+
+        return $output;
     }
 
     /**
