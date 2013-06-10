@@ -47,8 +47,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     protected $wordlist = array();
     protected $wordlistlength = 0;
 
-    const LENGTH_VIOLATION = 1;
-    const POOL_VIOLATION = 2;
+    const LENGTH_VIOLATION   = 1;
+    const POOL_VIOLATION     = 2;
     const USERNAME_VIOLATION = 4;
 
     /**
@@ -57,15 +57,15 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * Sets the policy from the DokuWiki config
      */
     public function __construct() {
-        $this->min_length = $this->getConf('minlen');
-        $this->min_pools  = $this->getConf('minpools');
+        $this->min_length    = $this->getConf('minlen');
+        $this->min_pools     = $this->getConf('minpools');
         $this->usernamecheck = $this->getConf('user');
-        $this->pronouncable = $this->getConf('pronouncable');
+        $this->pronouncable  = $this->getConf('pronouncable');
 
-        $opts = explode(',',$this->getConf('pools'));
-        if(count($opts)){ // ignore empty pool setups
+        $opts = explode(',', $this->getConf('pools'));
+        if(count($opts)) { // ignore empty pool setups
             $this->usepools = array();
-            foreach($opts as $pool){
+            foreach($opts as $pool) {
                 $this->usepools[$pool] = true;
             }
         }
@@ -80,8 +80,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     public function generatePassword($username) {
         $pw = '';
 
-        if($this->pronouncable){
-            for($i=0; $i < 3; $i++){
+        if($this->pronouncable) {
+            for($i = 0; $i < 3; $i++) {
                 $pw = $this->pronouncablePassword();
                 if($pw === false) break; // we'll never get a pronouncable password
 
@@ -92,7 +92,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         }
         if($pw) return $pw; // we're done already
 
-        for($i=0; $i < 5; $i++){
+        for($i = 0; $i < 5; $i++) {
             $pw = $this->randomPassword();
             if($pw === false) break; // we'll never get a pronouncable password
 
@@ -111,19 +111,19 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      *
      * @return string
      */
-    public function explainPolicy(){
+    public function explainPolicy() {
         // we need access to the settings.php translations for the pool names
         // FIXME core should provide a way to access them
         global $conf;
         $lang = array();
         $path = dirname(__FILE__);
         @include($path.'/lang/en/settings.php');
-        if ($conf['lang'] != 'en') @include($path.'/lang/'.$conf['lang'].'/settings.php');
+        if($conf['lang'] != 'en') @include($path.'/lang/'.$conf['lang'].'/settings.php');
 
         // load pool names
-        $confplugin = plugin_load('admin','config');
-        $pools = array();
-        foreach($this->usepools as $pool => $on){
+        $confplugin = plugin_load('admin', 'config');
+        $pools      = array();
+        foreach($this->usepools as $pool => $on) {
             if($on) $pools[] = $lang['pools_'.$pool];
         }
 
@@ -151,7 +151,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->error = 0;
 
         // check length first:
-        if(strlen($pass) < $this->min_length){
+        if(strlen($pass) < $this->min_length) {
             $this->error = helper_plugin_passpolicy::LENGTH_VIOLATION;
             return false;
         }
@@ -161,7 +161,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         if(!empty($this->usepools['upper'])) $matched_pools += (int) preg_match('/[A-Z]/', $pass);
         if(!empty($this->usepools['numeric'])) $matched_pools += (int) preg_match('/[0-9]/', $pass);
         if(!empty($this->usepools['special'])) $matched_pools += (int) preg_match('/[^A-Za-z0-9]/', $pass); // we consider everything else special
-        if($matched_pools < $this->min_pools){
+        if($matched_pools < $this->min_pools) {
             $this->error = helper_plugin_passpolicy::POOL_VIOLATION;
             return false;
         }
@@ -171,7 +171,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             $username = utf8_strtolower($username);
 
             // simplest case first
-            if(utf8_stripspecials($pass,'','\._\-:\*') == utf8_stripspecials($username,'','\._\-:\*')){
+            if(utf8_stripspecials($pass, '', '\._\-:\*') == utf8_stripspecials($username, '', '\._\-:\*')) {
                 $this->error = helper_plugin_passpolicy::USERNAME_VIOLATION;
                 return false;
             }
@@ -179,9 +179,9 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             // find possible chunks in the lenght defined in policy
             if($this->usernamecheck > 1) {
                 $chunks = array();
-                for($i = 0; $i < utf8_strlen($pass) - $this->usernamecheck+1; $i++) {
-                    $chunk = utf8_substr($pass, $i, $this->usernamecheck+1);
-                    if($chunk == utf8_stripspecials($chunk,'','\._\-:\*')){
+                for($i = 0; $i < utf8_strlen($pass) - $this->usernamecheck + 1; $i++) {
+                    $chunk = utf8_substr($pass, $i, $this->usernamecheck + 1);
+                    if($chunk == utf8_stripspecials($chunk, '', '\._\-:\*')) {
                         $chunks[] = $chunk; // only word chars are checked
                     }
                 }
@@ -190,7 +190,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                 $chunks = array_map('preg_quote_cb', $chunks);
                 $re     = join('|', $chunks);
 
-                if(preg_match("/($re)/", $username)){
+                if(preg_match("/($re)/", $username)) {
                     $this->error = helper_plugin_passpolicy::USERNAME_VIOLATION;
                     return false;
                 }
@@ -207,10 +207,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      */
     protected function randomPassword() {
         $usablepools = array();
-        $pw = '';
+        $pw          = '';
         // make sure all char pools are used
         foreach($this->usepools as $pool => $on) {
-            if($on){
+            if($on) {
                 $poollen = strlen($this->pools[$pool]);
                 $pw .= $this->pools[$pool][$this->rand(0, $poollen - 1)];
                 $usablepools[] = $pool;
@@ -221,7 +221,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // now fill up
         $poolcnt = count($usablepools);
         for($i = strlen($pw); $i < $this->min_length; $i++) {
-            $pool = $this->pools[$usablepools[$this->rand(0, $poolcnt-1)]];
+            $pool = $this->pools[$usablepools[$this->rand(0, $poolcnt - 1)]];
             $pw .= $pool[$this->rand(0, strlen($pool) - 1)];
         }
 
@@ -242,7 +242,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // prepare speakable char classes
         $consonants = 'bcdfghjklmnprstvwz'; //consonants except hard to speak ones
         $first      = $consonants;
-        if(empty($this->usepools['lower']))  $consonants = strtoupper($consonants);
+        if(empty($this->usepools['lower'])) $consonants = strtoupper($consonants);
         if(!empty($this->usepools['upper'])) $first = strtoupper($consonants); // prefer upper for first syllable letter
         $vowels   = 'aeiou';
         $all      = $consonants.$vowels;
@@ -277,15 +277,15 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @param int $numbits
      * @return string
      */
-    protected function random_passphrase($numbits=64) {
+    protected function random_passphrase($numbits = 64) {
         if($numbits < 24) $numbits = 24;
         $this->loadwordlist();
 
         $separators = $this->pool['specials'].$this->pool['numeric'];
-        $seplength = strlen($separators);
+        $seplength  = strlen($separators);
 
-        $sepbits = $this->num_bits($seplength);
-        $wordbits = $this->num_bits($this->wordlistlength)
+        $sepbits  = $this->num_bits($seplength);
+        $wordbits = $this->num_bits($this->wordlistlength);
 
         $output = '';
         do {
@@ -300,7 +300,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                 $output .= $separators[$this->rand(0, $seplength - 1)];
                 $numbits -= $sepbits;
             }
-        } while ($numbits > 0 || strlen($output) < $this->min_length);
+        } while($numbits > 0 || strlen($output) < $this->min_length);
 
         // ensure at least one upper case letter to match policy
         if($this->usepools['upper']) $output = ucfirst($output);
@@ -335,18 +335,18 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return int
      */
     public function rand($min, $max) {
-        if(!function_exists('openssl_random_pseudo_bytes')){
+        if(!function_exists('openssl_random_pseudo_bytes')) {
             return mt_rand($min, $max);
         }
 
         $real_max = $max - $min;
-        $mask = (1 << $this->num_bits($real_max)) - 1;
+        $mask     = (1 << $this->num_bits($real_max)) - 1;
 
         do {
             $bytes = openssl_random_pseudo_bytes(4, $strong);
             assert($strong);
             $integer = unpack("lnum", $bytes)["num"] & $mask;
-        } while ($integer > $real_max);
+        } while($integer > $real_max);
 
         return $integer + $min;
     }
@@ -358,10 +358,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * This list comes from a passphrase generator mentioned on sci.crypt, religious
      * and possibly offensive words have been replaced with less conflict laden words
      */
-    protected function loadwordlist(){
+    protected function loadwordlist() {
         if($this->wordlistlength) return; //list already loaded
 
-        $this->wordlist = file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
+        $this->wordlist       = file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
         $this->wordlistlength = count($this->wordlist);
     }
 }

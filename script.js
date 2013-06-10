@@ -1,14 +1,14 @@
-jQuery(function(){
+jQuery(function () {
 
     var $passfield = jQuery('form input[type=password][name=pass], form input[type=password][name=newpass]');
-    if(!$passfield.length) return;
+    if (!$passfield.length) return;
 
     /**
      * Scores a password's strength on an open scale
      *
      * @author Toms Baugis
      * @link http://stackoverflow.com/a/11268104
-     * @param string pass
+     * @param pass string
      * @return int
      */
     function scorePassword(pass) {
@@ -17,8 +17,8 @@ jQuery(function(){
             return score;
 
         // award every unique letter until 5 repetitions
-        var letters = new Object();
-        for (var i=0; i<pass.length; i++) {
+        var letters = {};
+        for (var i = 0; i < pass.length; i++) {
             letters[pass[i]] = (letters[pass[i]] || 0) + 1;
             score += 5.0 / letters[pass[i]];
         }
@@ -28,10 +28,10 @@ jQuery(function(){
             digits: /\d/.test(pass),
             lower: /[a-z]/.test(pass),
             upper: /[A-Z]/.test(pass),
-            nonWords: /\W/.test(pass),
+            nonWords: /\W/.test(pass)
         };
 
-        variationCount = 0;
+        var variationCount = 0;
         for (var check in variations) {
             variationCount += (variations[check] == true) ? 1 : 0;
         }
@@ -47,7 +47,7 @@ jQuery(function(){
     /**
      * Apply scoring
      */
-    function scoreit(){
+    function scoreit() {
         var score = scorePassword($passfield.val());
 
         if (score > 80) {
