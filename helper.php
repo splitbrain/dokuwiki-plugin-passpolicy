@@ -19,8 +19,11 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     /** @var int minimum length of the password (bytes) */
     public $min_length = 6;
 
-    /** @var bool try to generate a pronouncable password when calling generatePassword? */
-    public $pronouncable = true;
+    /** @var string what type of password generation to use? */
+    public $autotype = 'random';
+
+    /** @var int minimum bit strength auto generated passwords should have */
+    public $autobits = 64;
 
     /** @var array allowed character pools */
     public $usepools = array(
@@ -60,7 +63,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->min_length    = $this->getConf('minlen');
         $this->min_pools     = $this->getConf('minpools');
         $this->usernamecheck = $this->getConf('user');
-        $this->pronouncable  = $this->getConf('pronouncable');
+        $this->autotype      = $this->getConf('autotype');
+        $this->autobits      = $this->getConf('autobits');
 
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
@@ -78,29 +82,18 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @throws Exception when no password matching the current policy can be created
      */
     public function generatePassword($username) {
-        $pw = '';
-
-        if($this->pronouncable) {
-            for($i = 0; $i < 3; $i++) {
-                $pw = $this->pronouncablePassword();
-                if($pw === false) break; // we'll never get a pronouncable password
-
-                // check if policy is matched
-                if($this->checkPolicy($pw, $username)) break;
-                // try again
-            }
+        if($this->autotype == 'pronouncable') {
+            $pw = $this->pronouncablePassword();
+            if($pw && $this->checkPolicy($pw, $username)) return $pw;
         }
-        if($pw) return $pw; // we're done already
 
-        for($i = 0; $i < 5; $i++) {
-            $pw = $this->randomPassword();
-            if($pw === false) break; // we'll never get a pronouncable password
-
-            // check if policy is matched
-            if($this->checkPolicy($pw, $username)) break;
-            // try again
+        if($this->autotype == 'phrase') {
+            $pw = $this->randomPassphrase();
+            if($pw && $this->checkPolicy($pw, $username)) return $pw;
         }
-        if($pw) return $pw; // we're done already
+
+        $pw = $this->randomPassword();
+        if($pw && $this->checkPolicy($pw, $username)) return $pw;
 
         // still here? we have big problem
         throw new Exception('can\'t create a random password matching the password policy');
@@ -235,10 +228,6 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return bool|string  the new password, false on error
      */
     protected function pronouncablePassword() {
-        if(empty($this->usepools['upper']) && empty($this->usepools['lower'])) {
-            return false; // we need letters for pronouncable passwords
-        }
-
         // prepare speakable char classes
         $consonants = 'bcdfghjklmnprstvwz'; //consonants except hard to speak ones
         $first      = $consonants;
@@ -274,38 +263,39 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      *
      * @author Michael Samuel
      * @author Solar Designer
-     * @param int $numbits
      * @return string
      */
-    protected function random_passphrase($numbits = 64) {
-        if($numbits < 24) $numbits = 24;
+    protected function randomPassphrase() {
+        $num_bits = $this->autobits;
+
+        // prepare policy compliant prefix
+        $prefix = '';
+        if($this->usepools['numeric']) {
+            $prefix .= $this->rand(0, 999);
+            $num_bits -= $this->bits(999);
+        }
+        if($this->usepools['special']) {
+            $spec_len = strlen($this->pools['special']);
+            $prefix .= $this->pools['special'][rand(0, $spec_len - 1)];
+            $num_bits -= $this->bits($spec_len);
+        }
+
+        // load the words to use
         $this->loadwordlist();
+        $wordbits = $this->bits($this->wordlistlength);
 
-        $separators = $this->pool['specials'].$this->pool['numeric'];
-        $seplength  = strlen($separators);
-
-        $sepbits  = $this->num_bits($seplength);
-        $wordbits = $this->num_bits($this->wordlistlength);
-
+        // generate simple all lowercase word phrase
         $output = '';
         do {
-            $word = $this->wordlist[$this->rand(0, $this->wordlistlength - 1)];
-            if(secure_rand(0, 1)) {
-                $word = ucfirst($word);
-            }
-            $output .= $word;
-            $numbits -= $wordbits;
+            $output .= $this->wordlist[$this->rand(0, $this->wordlistlength - 1)].' ';
+            $num_bits -= $wordbits;
+        } while($num_bits > 0 || strlen($output) < $this->min_length);
 
-            if($numbits > 0 || strlen($output) < $this->min_length) {
-                $output .= $separators[$this->rand(0, $seplength - 1)];
-                $numbits -= $sepbits;
-            }
-        } while($numbits > 0 || strlen($output) < $this->min_length);
+        // now ensure policy compliance by uppercasing and prefixing
+        if($this->usepools['upper']) $output = ucwords($output);
+        if($prefix) $output = $prefix.' '.$output;
 
-        // ensure at least one upper case letter to match policy
-        if($this->usepools['upper']) $output = ucfirst($output);
-
-        return $output;
+        return trim($output);
     }
 
     /**
@@ -315,7 +305,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @param int $number
      * @return int
      */
-    protected function num_bits($number) {
+    protected function bits($number) {
         $bits = 0;
 
         while($number > 0) {
@@ -340,7 +330,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         }
 
         $real_max = $max - $min;
-        $mask     = (1 << $this->num_bits($real_max)) - 1;
+        $mask     = (1 << $this->bits($real_max)) - 1;
 
         do {
             $bytes = openssl_random_pseudo_bytes(4, $strong);
@@ -354,14 +344,32 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     /**
      * loads the word list for phrase generation
      *
-     * 4096 English words for generation of easy to memorize random passphrases.
-     * This list comes from a passphrase generator mentioned on sci.crypt, religious
-     * and possibly offensive words have been replaced with less conflict laden words
+     * Words are taken from the wiki's own search index and are complemented with a
+     * list of 4096 English words. This list comes from a passphrase generator
+     * mentioned on sci.crypt, religious and possibly offensive words have been
+     * replaced with less conflict laden words
      */
     protected function loadwordlist() {
         if($this->wordlistlength) return; //list already loaded
 
-        $this->wordlist       = file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
+        // load one of the local word index files
+        $indexer        = new helper_plugin_passpolicy__index();
+        $this->wordlist = $indexer->getIndex('w', $this->rand(4, 6));
+        $this->wordlist = array_filter($this->wordlist, 'utf8_isASCII'); //only ASCII, users might have trouble typing other things
+
+        // add our own word list to fill up
+        $this->wordlist += file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
         $this->wordlistlength = count($this->wordlist);
+    }
+}
+
+/**
+ * Class helper_plugin_passpolicy__index
+ *
+ * just to access a protected function
+ */
+class helper_plugin_passpolicy__index extends Doku_Indexer {
+    public function getIndex($idx, $suffix) {
+        return parent::getIndex($idx, $suffix);
     }
 }

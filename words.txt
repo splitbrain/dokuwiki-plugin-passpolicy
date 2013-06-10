@@ -296,6 +296,7 @@ bat
 batch
 bath
 baton
+battery
 battle
 bay
 beach
@@ -3992,7 +3993,6 @@ who
 whole
 wholly
 whom
-whore
 whose
 why
 wide

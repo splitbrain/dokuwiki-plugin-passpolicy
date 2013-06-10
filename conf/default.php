@@ -9,4 +9,6 @@ $conf['minlen']   = 8;
 $conf['pools']    = 'lower,numeric,special';
 $conf['minpools'] = 2;
 $conf['user']     = 1;
-$conf['pronouncable'] = 0;
+
+$conf['autotype'] = 'random';
+$conf['autobits'] = 44;
