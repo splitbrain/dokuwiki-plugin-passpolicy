@@ -49,6 +49,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
 
     protected $wordlist = array();
     protected $wordlistlength = 0;
+    protected $msgshown = false;
 
     const LENGTH_VIOLATION   = 1;
     const POOL_VIOLATION     = 2;
@@ -374,7 +375,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                 $integer = unpack("lnum", $bytes)["num"] & $mask;
             } while($integer > $real_max);
         } catch(Exception $e) {
-            msg('No secure random generator available, falling back to less secure mt_rand()', -1);
+            if(!$this->msgshown){
+                msg('No secure random generator available, falling back to less secure mt_rand()', -1);
+                $this->msgshown = true;
+            }
             return mt_rand($min, $max);
         }
 
