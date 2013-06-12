@@ -81,11 +81,11 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * Generates a random password according to the backend settings
      *
      * @param string $username
-     * @param int $try internal variable, do not set!
+     * @param int    $try internal variable, do not set!
      * @throws Exception when the generator fails to create a policy compliant password
      * @return bool|string
      */
-    public function generatePassword($username, $try=0) {
+    public function generatePassword($username, $try = 0) {
         if($this->autotype == 'pronouncable') {
             $pw = $this->pronouncablePassword();
             if($pw && $this->checkPolicy($pw, $username)) return $pw;
@@ -367,15 +367,15 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      */
     public function rand($min, $max) {
         $real_max = $max - $min;
-        $mask = (1 << $this->bits($real_max)) - 1;
+        $mask     = (1 << $this->bits($real_max)) - 1;
 
         try {
             do {
-                $bytes = $this->trueRandomBytes(4);
+                $bytes   = $this->trueRandomBytes(4);
                 $integer = unpack("lnum", $bytes)["num"] & $mask;
             } while($integer > $real_max);
         } catch(Exception $e) {
-            if(!$this->msgshown){
+            if(!$this->msgshown) {
                 msg('No secure random generator available, falling back to less secure mt_rand()', -1);
                 $this->msgshown = true;
             }
@@ -389,7 +389,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * Return truly (pseudo) random bytes
      *
      * @author Mark Seecof
-     * @link http://www.php.net/manual/de/function.mt-rand.php#83655
+     * @link   http://www.php.net/manual/de/function.mt-rand.php#83655
      * @param int $bytes number of bytes to get
      * @throws Exception when no usable random generator is found
      * @return string binary random strings
@@ -406,7 +406,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         if(!$strong) {
             // Unix/Linux platform
             $fp = @fopen('/dev/urandom', 'rb');
-            if($fp !== FALSE) {
+            if($fp !== false) {
                 $rbytes = fread($fp, $bytes);
                 fclose($fp);
             }
@@ -416,12 +416,12 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                 // http://msdn.microsoft.com/en-us/library/aa388176(VS.85).aspx
                 try {
                     $CAPI_Util = new COM('CAPICOM.Utilities.1');
-                    $rbytes = $CAPI_Util->GetRandom($bytes, 0);
+                    $rbytes    = $CAPI_Util->GetRandom($bytes, 0);
 
                     // if we ask for binary data PHP munges it, so we
                     // request base64 return value.  We squeeze out the
                     // redundancy and useless ==CRLF by hashing...
-                    if($rbytes) $rbytes = md5($rbytes, TRUE);
+                    if($rbytes) $rbytes = md5($rbytes, true);
                 } catch(Exception $ex) {
                     // fail
                 }
