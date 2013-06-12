@@ -365,20 +365,69 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @return int
      */
     public function rand($min, $max) {
-        if(!function_exists('openssl_random_pseudo_bytes')) {
+        $real_max = $max - $min;
+        $mask = (1 << $this->bits($real_max)) - 1;
+
+        try {
+            do {
+                $bytes = $this->trueRandomBytes(4);
+                $integer = unpack("lnum", $bytes)["num"] & $mask;
+            } while($integer > $real_max);
+        } catch(Exception $e) {
+            msg('No secure random generator available, falling back to less secure mt_rand()', -1);
             return mt_rand($min, $max);
         }
 
-        $real_max = $max - $min;
-        $mask     = (1 << $this->bits($real_max)) - 1;
-
-        do {
-            $bytes = openssl_random_pseudo_bytes(4, $strong);
-            assert($strong);
-            $integer = unpack("lnum", $bytes)["num"] & $mask;
-        } while($integer > $real_max);
-
         return $integer + $min;
+    }
+
+    /**
+     * Return truly (pseudo) random bytes
+     *
+     * @author Mark Seecof
+     * @link http://www.php.net/manual/de/function.mt-rand.php#83655
+     * @param int $bytes number of bytes to get
+     * @throws Exception when no usable random generator is found
+     * @return string binary random strings
+     */
+    protected function trueRandomBytes($bytes) {
+        $strong = false;
+        $rbytes = false;
+
+        if(function_exists('openssl_random_pseudo_bytes')) {
+            $rbytes = openssl_random_pseudo_bytes($bytes, $strong);
+        }
+
+        // If no strong SSL randoms available, try OS the specific ways
+        if(!$strong) {
+            // Unix/Linux platform
+            $fp = @fopen('/dev/urandom', 'rb');
+            if($fp !== FALSE) {
+                $rbytes = fread($fp, $bytes);
+                fclose($fp);
+            }
+
+            // MS-Windows platform
+            if(class_exists('COM')) {
+                // http://msdn.microsoft.com/en-us/library/aa388176(VS.85).aspx
+                try {
+                    $CAPI_Util = new COM('CAPICOM.Utilities.1');
+                    $rbytes = $CAPI_Util->GetRandom($bytes, 0);
+
+                    // if we ask for binary data PHP munges it, so we
+                    // request base64 return value.  We squeeze out the
+                    // redundancy and useless ==CRLF by hashing...
+                    if($rbytes) $rbytes = md5($rbytes, TRUE);
+                } catch(Exception $ex) {
+                    // fail
+                }
+            }
+        }
+        if(strlen($rbytes) < $bytes) $rbytes = false;
+
+        if($rbytes === false) throw new Exception('No true random generator available');
+
+        return $rbytes;
     }
 
     /**
