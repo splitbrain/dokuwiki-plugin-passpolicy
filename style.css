@@ -2,23 +2,31 @@
     font-size: .875em;
 }
 
-.dokuwiki #passpolicy__indicatator {
-    font-weight: bold;
-    text-align: right;
-}
 
 .dokuwiki .passpolicy_strength0 {
     color: #cd0a0a;
+    font-weight: bold;
+    text-align: right;
+    margin: 0;
 }
 
 .dokuwiki .passpolicy_strength1 {
     color: #dd3300;
+    font-weight: bold;
+    text-align: right;
+    margin: 0;
 }
 
 .dokuwiki .passpolicy_strength2 {
     color: #66cc66;
+    font-weight: bold;
+    text-align: right;
+    margin: 0;
 }
 
 .dokuwiki .passpolicy_strength3 {
     color: #008800;
+    font-weight: bold;
+    text-align: right;
+    margin: 0;
 }

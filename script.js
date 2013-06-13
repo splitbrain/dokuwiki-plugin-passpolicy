@@ -1,6 +1,8 @@
 jQuery(function () {
 
-    var $passfield = jQuery('form input[type=password][name=pass], form input[type=password][name=newpass]');
+    var $passfield = jQuery('form input[type=password][name=pass], ' +
+                            'form input[type=password][name=newpass], ' +
+                            '#add_userpass, #modify_userpass');
     if (!$passfield.length) return;
 
     /**
@@ -40,15 +42,14 @@ jQuery(function () {
         return parseInt(score);
     }
 
-    var indicator = document.createElement('p');
-    indicator.id = 'passpolicy__indicator';
-    $passfield.after(indicator);
-
     /**
      * Apply scoring
+     *
+     * @param $field object jQuery object of the password field
+     * @param indicator DomObject where the output should go
      */
-    function scoreit() {
-        var score = scorePassword($passfield.val());
+    function scoreit($field, indicator) {
+        var score = scorePassword($field.val());
 
         if (score > 80) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength3;
@@ -65,7 +66,20 @@ jQuery(function () {
         }
     }
 
-    $passfield.keyup(scoreit);
-    $passfield.blur(scoreit);
+    /**
+     * Attach strength tester at the found password fields
+     */
+    $passfield.each(function(){
+        var $field = jQuery(this);
+
+        var indicator = document.createElement('p');
+        indicator.className = 'passpolicy__indicator';
+
+        $field.after(indicator);
+        $field.keyup(function(){ scoreit($field, indicator) });
+        $field.blur(function(){ scoreit($field, indicator) });
+    });
+
+
 
 });
