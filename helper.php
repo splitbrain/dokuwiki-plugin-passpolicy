@@ -372,7 +372,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         try {
             do {
                 $bytes   = $this->trueRandomBytes(4);
-                $integer = unpack("lnum", $bytes)["num"] & $mask;
+                $unpack  = unpack("lnum", $bytes);
+                $integer = $unpack["num"] & $mask;
             } while($integer > $real_max);
         } catch(Exception $e) {
             if(!$this->msgshown) {
