@@ -1,5 +1,8 @@
 <?php
-
+/**
+ * @group plugin_passpolicy
+ * @group plugins
+ */
 class helper_plugin_passpolicy_test extends DokuWikiTest {
 
     protected $pluginsEnabled = array('passpolicy');
