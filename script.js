@@ -41,6 +41,31 @@ jQuery(function () {
 
         return parseInt(score);
     }
+    
+    /**
+     * check policy
+     *
+     * @param $field object jQuery object of the password field
+     * @param indicator DomObject where the output should go
+     */
+    function checkpolicy($field,indicator) {
+    	var pass = $field.val();
+    	
+    	jQuery.post(
+    		DOKU_BASE+'lib/exe/ajax.php',
+    		{
+    			call:'plugin_passpolicy',
+    			pass:pass
+    		},
+    		function(response){
+    			if(response === '1') {
+    				scoreit($field,indicator,true);
+    			} else {
+    				scoreit($field,indicator,false);
+    			}
+    		}
+    	);
+    }
 
     /**
      * Apply scoring
@@ -48,16 +73,16 @@ jQuery(function () {
      * @param $field object jQuery object of the password field
      * @param indicator DomObject where the output should go
      */
-    function scoreit($field, indicator) {
+    function scoreit($field, indicator,policy) {
         var score = scorePassword($field.val());
-
-        if (score > 80) {
+        
+        if (score > 80 && policy) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength3;
             indicator.className = 'passpolicy_strength3';
-        } else if (score > 60) {
+        } else if (policy) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength2;
             indicator.className = 'passpolicy_strength2';
-        } else if (score >= 30) {
+        } else if (!policy && score >= 30) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength1;
             indicator.className = 'passpolicy_strength1';
         } else {
@@ -76,8 +101,8 @@ jQuery(function () {
         indicator.className = 'passpolicy__indicator';
 
         $field.after(indicator);
-        $field.keyup(function(){ scoreit($field, indicator) });
-        $field.blur(function(){ scoreit($field, indicator) });
+        $field.keyup(function(){ checkpolicy($field, indicator) });
+        $field.blur(function(){ checkpolicy($field, indicator) });
     });
 
 
