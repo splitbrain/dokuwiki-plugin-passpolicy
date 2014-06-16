@@ -26,6 +26,32 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
         $controller->register_hook('AUTH_USER_CHANGE', 'BEFORE', $this, 'handle_passchange');
 
         $controller->register_hook('AUTH_PASSWORD_GENERATE', 'BEFORE', $this, 'handle_passgen');
+                
+        $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE',  $this, '_ajax_call');
+    }
+    
+    function _ajax_call(Doku_Event &$event,$param) {
+    	if ($event->data !== 'plugin_passpolicy') {
+    		return;
+    	}
+    	//no other ajax call handlers needed
+    	$event->stopPropagation();
+    	$event->preventDefault();
+    
+    	if(!$_SERVER['REMOTE_USER']) return;
+    	
+    	/* @var $INPUT \Input */
+    	global $INPUT;
+    	$pass = $INPUT->post->str('pass');
+    	
+    	$passpolicy = $this->loadHelper('passpolicy');
+    	if(!$passpolicy->checkPolicy($pass, $_SERVER['REMOTE_USER'])) {
+    		// passpolicy not matched, throw error
+    		echo '0';
+    	} else {
+    		echo '1';
+    	}
+    	
     }
 
     /**
@@ -58,12 +84,12 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
         if($event->data['type'] == 'create') {
             $user = $event->data['params'][0];
             $pass = $event->data['params'][1];
-        } elseif($event->data['type'] == 'create') {
+        } elseif($event->data['type'] == 'modify') {
             $user = $event->data['params'][0];
-            if(!isset($event->data['params'][1]['password'])) {
+            if(!isset($event->data['params'][1]['pass'])) {
                 return; //password is not changed, nothing to do
             }
-            $pass = $event->data['params'][1]['password'];
+            $pass = $event->data['params'][1]['pass'];
         } else {
             return;
         }
