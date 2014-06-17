@@ -22,4 +22,9 @@ $lang['pools_upper']   = 'upper case letters';
 $lang['pools_numeric'] = 'numbers';
 $lang['pools_special'] = 'special chars (eg. !, $, #, %)';
 
+$lang['oldpass']  = 'Number of old passwords, which will be checked. 0 to disable checking old passwords.';
+$lang['expire']      = 'Number in days when password will expire. 0 to disable expireing passwords';
+$lang['expirewarn']  = 'Number in days before user should be informed about an expireing password.';
+$lang['date_start']  = 'Date when password need to be changed for the first time. Format YYYY-MM-DD.';
+
 //Setup VIM: ex: et ts=4 :

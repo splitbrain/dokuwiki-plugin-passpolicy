@@ -24,12 +24,75 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
         $controller->register_hook('HTML_RESENDPWDFORM_OUTPUT', 'BEFORE', $this, 'handle_forms');
 
         $controller->register_hook('AUTH_USER_CHANGE', 'BEFORE', $this, 'handle_passchange');
+        $controller->register_hook('AUTH_USER_CHANGE', 'BEFORE', $this, 'save_pass');
 
         $controller->register_hook('AUTH_PASSWORD_GENERATE', 'BEFORE', $this, 'handle_passgen');
                 
         $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE',  $this, '_ajax_call');
+        
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE',  $this, 'check_act');
+        
+        
     }
     
+    /**
+     * Handles the warn message and redirects user to the profile page in case of password expired
+     * 
+     * @param Doku_Event $event
+     * @param unknown $param
+     */
+    function check_act(Doku_Event &$event,$param) {
+    	if(!$_SERVER['REMOTE_USER']) return;
+    
+    	if(in_array($event->data,array('login','logout','profile')))  return;
+    	
+    	/* @var $passpolicy helper_plugin_passpolicy */
+    	$passpolicy = $this->loadHelper('passpolicy');
+    	 
+    	if($expireDate = $passpolicy->checkPasswordExpired()) { //password is expired
+    		msg(sprintf($this->getLang('expired'), date('Y-m-d',$expireDate)));
+    		$event->data = 'profile';
+    	} else if($expireDate = $passpolicy->checkPasswordExpireWarn()) { //show warn message
+    		if(!isset($_COOKIE['passpolicy_msg_hide'])) {
+    			msg(sprintf($this->getLang('expirewarn'), date('Y-m-d',$expireDate),tpl_action('profile',1,false,true)));
+    		}
+    		
+    	}
+   
+    }
+    
+    /**
+     * Save the password to the pass history
+     * 
+     * @param Doku_Event $event
+     * @param unknown $param
+     */
+    function save_pass(Doku_Event &$event,$param) {
+    	if($event->data['type'] == 'create') {
+            $user = $event->data['params'][0];
+            $pass = $event->data['params'][1];
+        } elseif($event->data['type'] == 'modify') {
+            $user = $event->data['params'][0];
+            if(!isset($event->data['params'][1]['pass'])) {
+                return; //password is not changed, nothing to do
+            }
+            $pass = $event->data['params'][1]['pass'];
+        } else {
+            return;
+        }
+
+        /* @var $passpolicy helper_plugin_passpolicy */
+        $passpolicy = $this->loadHelper('passpolicy');
+       
+        $passpolicy->savePassword2PassHistory($user,$pass);
+    }
+
+    /**
+     * Check for password policy
+     * 
+     * @param Doku_Event $event
+     * @param unknown $param
+     */
     function _ajax_call(Doku_Event &$event,$param) {
     	if ($event->data !== 'plugin_passpolicy') {
     		return;
@@ -42,10 +105,13 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
     	
     	/* @var $INPUT \Input */
     	global $INPUT;
+    	$user = $INPUT->post->str('user',$_SERVER['REMOTE_USER']);
     	$pass = $INPUT->post->str('pass');
     	
+    	
+    	
     	$passpolicy = $this->loadHelper('passpolicy');
-    	if(!$passpolicy->checkPolicy($pass, $_SERVER['REMOTE_USER'])) {
+    	if(!$passpolicy->checkPolicy($pass, $user)) {
     		// passpolicy not matched, throw error
     		echo '0';
     	} else {
@@ -70,6 +136,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
         $passpolicy = plugin_load('helper', 'passpolicy');
         $html       = '<p class="passpolicy_hint">'.$passpolicy->explainPolicy().'</p>';
         $event->data->insertElement(++$pos, $html);
+        
     }
 
     /**

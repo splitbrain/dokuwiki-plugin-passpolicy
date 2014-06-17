@@ -51,11 +51,14 @@ jQuery(function () {
     function checkpolicy($field,indicator) {
     	var pass = $field.val();
     	
+    	var user = $field.closest('form').find('input[name="userid"]').val();
+    	
     	jQuery.post(
     		DOKU_BASE+'lib/exe/ajax.php',
     		{
     			call:'plugin_passpolicy',
-    			pass:pass
+    			pass:pass,
+    			user:user
     		},
     		function(response){
     			if(response === '1') {
@@ -96,7 +99,7 @@ jQuery(function () {
      */
     $passfield.each(function(){
         var $field = jQuery(this);
-
+        
         var indicator = document.createElement('p');
         indicator.className = 'passpolicy__indicator';
 
@@ -106,5 +109,11 @@ jQuery(function () {
     });
 
 
+});
 
+jQuery(function(){
+	jQuery('#passpolicy_msg_hide').click(function(){
+		jQuery(this).closest('div').hide(200);
+		jQuery.cookie('passpolicy_msg_hide','hide',{expires:1});
+	});
 });

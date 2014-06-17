@@ -12,3 +12,9 @@ $conf['user']     = 1;
 
 $conf['autotype'] = 'random';
 $conf['autobits'] = 44;
+
+
+$conf['oldpass']     = 5;
+$conf['expire']      = 30;
+$conf['expirewarn']  = 2;
+$conf['date_start']  = '2014-06-18';
