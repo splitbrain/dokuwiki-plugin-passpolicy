@@ -33,8 +33,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         'special' => false
     );
     
-    /** @var string path to pass history file  */
-    public $passhistory_file = null;
+    /** @var string path to pass history dir  */
+    public $passhistorydir = null;
     
 
     /** @var int number of consecutive letters that may not be in the username, 0 to disable */
@@ -73,7 +73,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->autobits      = $this->getConf('autobits');
         $this->oldpass       = $this->getConf('oldpass');
 
-        $this->passhistory_file = DOKU_CONF .'/policy.userpasshistory.json';
+        $this->passhistorydir = DOKU_DATA .'/passhistory/';
         
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
@@ -209,9 +209,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         
         //dbg($pass);
         if($this->oldpass > 0 && 
-        	$passHistory = $this->getUserHistory($username)
+        	$oldPasswords = $this->getUserPassHistory($username)
         ) {
-        	$oldPasswords = array_slice($passHistory['pass'], 0, $this->getConf('oldpass'));
         	foreach($oldPasswords as $oldPassword) {
         		if(auth_verifyPassword($pass, $oldPassword)) {
 					$this->error = helper_plugin_passpolicy::OLDPASS_VIOLATION;
@@ -482,7 +481,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     
     
     /**
-     * password is expired
+     * check if password is expired
      * 
      * @param string $user
      * @return boolean|timestamp timestamp when password is expired with expireing day
@@ -503,7 +502,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     }
     
     /**
-     * warn user about an expireing password
+     * check if we have to warn the user about an expireing password
      * 
      * @param string $user
      * @return boolean|timestamp false or timestamp when the password will expire.
@@ -526,18 +525,16 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     }
     
     /**
-     * returns the date when to actual password will expire, wont respect dateStart to extend the time
+     * returns the date when the current password will expire, wont respect dateStart to extend the time
      * 
      * @param string $user
      * @return false or timestamp
      */
     protected function getDatePassExpire($user = false) {
-    	$userHistoryPolicy = $this->getUserPassHistory($user);
+    	$passChanged = $this->getPassHistoryChangeDate($user);
     	$dateStart = strtotime($this->getConf('date_start'));
-    	$passChanged = false;
-    	 
-    	if($userHistoryPolicy) { //user has already changed password since plugin installation
-    		$passChanged = $userHistoryPolicy['date'];
+    		 
+    	if($passChanged) { //user has already changed password since plugin installation
     		$expire_interval = $this->getConf('expire') * 3600*24;
     		if($expire_interval) {//next password change will be then
     			$expireDate = $passChanged + $expire_interval;
@@ -560,19 +557,29 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     protected function getUserPassHistory($user=false) {
     	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
     	
-    	$jsonData = io_readFile($this->passhistory_file);
-    	if(!$jsonData) {
-    		//msg('cannot read file');
-    		return null;
+    	$passhistory = io_readFile($this->passhistorydir . $user.'.txt');
+    	if(!$passhistory) {
+    		return false;
     	}
-    	$userPassHistory = json_decode($jsonData,true);
+    	$passhistory = explode("\n", $passhistory);
     	  	 
-    	if(isset($userPassHistory[$user])) {
-    		return $userPassHistory[$user];
+    	if(is_array($passhistory)) {
+    		$passhistory = array_slice($passhistory, 0, $this->getConf('oldpass'));		
+    		return $passhistory;
     	} else {
     		return false;
     	}
     	
+    }
+    
+    /**
+     * returns the modification date of the passhistory file, which is the date when user changed password
+     * @param string $user
+     */
+    protected function getPassHistoryChangeDate($user=false) {
+    	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
+    	
+    	return @filemtime($this->passhistorydir . $user .'.txt');
     }
     
     /**
@@ -582,30 +589,18 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * @param string $pass
      */
     public function savePassword2PassHistory($user,$pass) {
-    	$jsonData = io_readFile($this->passhistory_file);
-    	if(!$jsonData) {
-    		$userPassHistory = array();
+    	$passhistory = $this->getUserPassHistory($user);
+    	if(!$passhistory) {
+    		$passhistory = auth_cryptPassword($pass);
     	} else {
-    		$userPassHistory = json_decode($jsonData,true);
+    		array_unshift($passhistory, auth_cryptPassword($pass));
+    		$passhistory = array_slice($passhistory, 0, $this->getConf('oldpass'));
+    		$passhistory = implode("\n", $passhistory);
     	}
-    	
-    	if(isset($userPassHistory[$user])) {
-    		array_unshift($userPassHistory[$user]['pass'], auth_cryptPassword($pass));
-    		$userPassHistory[$user]['pass'] = array_slice($userPassHistory[$user]['pass'], 0, $this->getConf('oldpass'));
-    		
-    	} else {
-    		$userPassHistory[$user]['pass'] = array(auth_cryptPassword($pass));
-    	}
-    	
-    	$userPassHistory[$user]['date'] = time();
-    	
-    	io_saveFile($this->passhistory_file, json_encode($userPassHistory));
-    	
+
+    	io_saveFile($this->passhistorydir .$user.'.txt', $passhistory);
     }
-    
-    
-    
-    
+
 }
 
 /**

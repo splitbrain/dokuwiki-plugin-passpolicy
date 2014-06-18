@@ -14,7 +14,7 @@ $conf['autotype'] = 'random';
 $conf['autobits'] = 44;
 
 
-$conf['oldpass']     = 5;
-$conf['expire']      = 30;
+$conf['oldpass']     = 0;
+$conf['expire']      = 90;
 $conf['expirewarn']  = 2;
-$conf['date_start']  = '2014-06-18';
+$conf['date_start']  = '2030-01-01';
