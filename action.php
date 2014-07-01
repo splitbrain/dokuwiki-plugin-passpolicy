@@ -50,11 +50,11 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
     	$passpolicy = $this->loadHelper('passpolicy');
     	 
     	if($expireDate = $passpolicy->checkPasswordExpired()) { //password is expired
-    		msg(sprintf($this->getLang('expired'), date('Y-m-d',$expireDate)));
+    		msg(sprintf($this->getLang('expired'), dformat($expireDate)));
     		$event->data = 'profile';
     	} else if($expireDate = $passpolicy->checkPasswordExpireWarn()) { //show warn message
     		if(!isset($_COOKIE['passpolicy_msg_hide'])) {
-    			msg(sprintf($this->getLang('expirewarn'), date('Y-m-d',$expireDate),tpl_action('profile',1,false,true)));
+    			msg(sprintf($this->getLang('expirewarn'), dformat($expireDate),tpl_action('profile',1,false,true)));
     		}
     		
     	}
