@@ -559,7 +559,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     protected function getUserPassHistory($user=false) {
     	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
     	
-    	$passhistory = io_readFile($this->passhistorydir . $user.'.txt');
+    	$passhistory = io_readFile($this->passhistorydir . utf8_encodeFN($user).'.txt');
     	if(!$passhistory) {
     		return false;
     	}
@@ -581,7 +581,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     protected function getPassHistoryChangeDate($user=false) {
     	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
     	
-    	return @filemtime($this->passhistorydir . $user .'.txt');
+    	return @filemtime($this->passhistorydir . utf8_encodeFN($user) .'.txt');
     }
     
     /**
@@ -600,7 +600,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     		$passhistory = implode("\n", $passhistory);
     	}
 
-    	io_saveFile($this->passhistorydir .$user.'.txt', $passhistory);
+    	io_saveFile($this->passhistorydir .utf8_encodeFN($user).'.txt', $passhistory);
     }
 
 }
