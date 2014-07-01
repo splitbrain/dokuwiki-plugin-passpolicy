@@ -66,6 +66,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * Sets the policy from the DokuWiki config
      */
     public function __construct() {
+    	global $conf;
+    	
         $this->min_length    = $this->getConf('minlen');
         $this->min_pools     = $this->getConf('minpools');
         $this->usernamecheck = $this->getConf('user');
@@ -73,7 +75,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->autobits      = $this->getConf('autobits');
         $this->oldpass       = $this->getConf('oldpass');
 
-        $this->passhistorydir = DOKU_DATA .'/passhistory/';
+        $this->passhistorydir = $conf['metadir'].'/_passhistory/';
         
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
