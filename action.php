@@ -44,7 +44,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
     function check_act(Doku_Event &$event,$param) {
     	if(!$_SERVER['REMOTE_USER']) return;
     
-    	if(in_array($event->data,array('login','logout','profile')))  return;
+    	if(in_array($event->data,array('login','logout','profile','admin')))  return;
     	
     	/* @var $passpolicy helper_plugin_passpolicy */
     	$passpolicy = $this->loadHelper('passpolicy');
