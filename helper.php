@@ -32,6 +32,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         'numeric' => true,
         'special' => false
     );
+    
+    /** @var string path to pass history dir  */
+    public $passhistorydir = null;
+    
 
     /** @var int number of consecutive letters that may not be in the username, 0 to disable */
     public $usernamecheck = 0;
@@ -54,6 +58,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     const LENGTH_VIOLATION   = 1;
     const POOL_VIOLATION     = 2;
     const USERNAME_VIOLATION = 4;
+    const OLDPASS_VIOLATION  = 8;
 
     /**
      * Constructor
@@ -61,12 +66,17 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
      * Sets the policy from the DokuWiki config
      */
     public function __construct() {
+    	global $conf;
+    	
         $this->min_length    = $this->getConf('minlen');
         $this->min_pools     = $this->getConf('minpools');
         $this->usernamecheck = $this->getConf('user');
         $this->autotype      = $this->getConf('autotype');
         $this->autobits      = $this->getConf('autobits');
+        $this->oldpass       = $this->getConf('oldpass');
 
+        $this->passhistorydir = $conf['metadir'].'/_passhistory/';
+        
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
             $this->usepools = array();
@@ -129,13 +139,15 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
 
         $text = '';
         if($this->min_length)
-            $text .= sprintf($this->getLang('length'), $this->min_length)."\n";
+            $text .= sprintf($this->getLang('length'), $this->min_length)."<br>";
         if($this->min_pools)
-            $text .= sprintf($this->getLang('pools'), $this->min_pools, join(', ', $pools))."\n";
+            $text .= sprintf($this->getLang('pools'), $this->min_pools, join(', ', $pools))."<br>";
         if($this->usernamecheck == 1)
-            $text .= $this->getLang('user1')."\n";
+            $text .= $this->getLang('user1')."<br>";
         if($this->usernamecheck > 1)
-            $text .= sprintf($this->getLang('user2'), $this->usernamecheck)."\n";
+            $text .= sprintf($this->getLang('user2'), $this->usernamecheck)."<br>";
+        if($this->oldpass > 0)
+            $text .= sprintf($this->getLang('oldpass'), $this->oldpass)."<br>";
 
         return trim($text);
     }
@@ -151,7 +163,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->error = 0;
 
         // check length first:
-        if(strlen($pass) < $this->min_length) {
+        if(utf8_strlen($pass) < $this->min_length) {
             $this->error = helper_plugin_passpolicy::LENGTH_VIOLATION;
             return false;
         }
@@ -167,11 +179,11 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         }
 
         if($this->usernamecheck && $username) {
-            $pass     = utf8_strtolower($pass);
-            $username = utf8_strtolower($username);
+            $pass2     = utf8_strtolower($pass);
+            $username  = utf8_strtolower($username);
 
             // simplest case first
-            if(utf8_stripspecials($pass, '', '\._\-:\*') == utf8_stripspecials($username, '', '\._\-:\*')) {
+            if(utf8_stripspecials($pass2, '', '\._\-:\*') == utf8_stripspecials($username, '', '\._\-:\*')) {
                 $this->error = helper_plugin_passpolicy::USERNAME_VIOLATION;
                 return false;
             }
@@ -179,8 +191,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             // find possible chunks in the lenght defined in policy
             if($this->usernamecheck > 1) {
                 $chunks = array();
-                for($i = 0; $i < utf8_strlen($pass) - $this->usernamecheck + 1; $i++) {
-                    $chunk = utf8_substr($pass, $i, $this->usernamecheck + 1);
+                for($i = 0; $i < utf8_strlen($pass2) - $this->usernamecheck + 1; $i++) {
+                    $chunk = utf8_substr($pass2, $i, $this->usernamecheck + 1);
                     if($chunk == utf8_stripspecials($chunk, '', '\._\-:\*')) {
                         $chunks[] = $chunk; // only word chars are checked
                     }
@@ -195,6 +207,19 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                     return false;
                 }
             }
+        }
+        
+        //dbg($pass);
+        if($this->oldpass > 0 && 
+        	$oldPasswords = $this->getUserPassHistory($username)
+        ) {
+        	foreach($oldPasswords as $oldPassword) {
+        		if(auth_verifyPassword($pass, $oldPassword)) {
+					$this->error = helper_plugin_passpolicy::OLDPASS_VIOLATION;
+        			return false;
+        		}
+        	}
+	
         }
 
         return true;
@@ -455,6 +480,129 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->wordlist += file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
         $this->wordlistlength = count($this->wordlist);
     }
+    
+    
+    /**
+     * check if password is expired
+     * 
+     * @param string $user
+     * @return boolean|timestamp timestamp when password is expired with expireing day
+     */
+    public function checkPasswordExpired($user=false) {
+    	$dateStart = strtotime($this->getConf('date_start'));
+    	
+    	$datePassExpire = $this->getDatePassExpire($user);
+    
+    	if($datePassExpire && 
+    		$datePassExpire >= $dateStart &&
+    		$datePassExpire < time()
+        ) {
+    		return $datePassExpire;
+    	} 
+    	
+    	return false;
+    }
+    
+    /**
+     * check if we have to warn the user about an expireing password
+     * 
+     * @param string $user
+     * @return boolean|timestamp false or timestamp when the password will expire.
+     */
+    public function checkPasswordExpireWarn($user=false) {
+    	$timespanWarn = intval($this->getConf('expirewarn'));
+    	if(!$timespanWarn) return false;
+    	
+    	$dateStart = strtotime($this->getConf('date_start'));
+    	
+    	$datePassExpire = $this->getDatePassExpire($user);
+
+    	if($datePassExpire && 
+    		max(array($datePassExpire,$dateStart)) < (time() + $timespanWarn*3600*24)
+        ) {
+    		return max(array($datePassExpire,$dateStart));
+    	} 
+    	return false;
+    	
+    }
+    
+    /**
+     * returns the date when the current password will expire, wont respect dateStart to extend the time
+     * 
+     * @param string $user
+     * @return false or timestamp
+     */
+    protected function getDatePassExpire($user = false) {
+    	$passChanged = $this->getPassHistoryChangeDate($user);
+    	$dateStart = strtotime($this->getConf('date_start'));
+    		 
+    	if($passChanged) { //user has already changed password since plugin installation
+    		$expire_interval = $this->getConf('expire') * 3600*24;
+    		if($expire_interval) {//next password change will be then
+    			$expireDate = $passChanged + $expire_interval;
+    		} else {//no need to change password
+    			$expireDate = false;
+    		}
+    	} else { //user has not changed password since plugin installation, password will expire at start date
+    		$expireDate = $dateStart;
+    	}
+    
+    	return $expireDate;	 
+    }
+    
+    /**
+     * returns the passHistory entry for a given user
+     * 
+     * @param string $user
+     * @return NULL|boolean|array assotiative array 'date','pass'[]
+     */
+    protected function getUserPassHistory($user=false) {
+    	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
+    	
+    	$passhistory = io_readFile($this->passhistorydir . utf8_encodeFN($user).'.txt');
+    	if(!$passhistory) {
+    		return false;
+    	}
+    	$passhistory = explode("\n", $passhistory);
+    	  	 
+    	if(is_array($passhistory)) {
+    		$passhistory = array_slice($passhistory, 0, $this->getConf('oldpass'));		
+    		return $passhistory;
+    	} else {
+    		return false;
+    	}
+    	
+    }
+    
+    /**
+     * returns the modification date of the passhistory file, which is the date when user changed password
+     * @param string $user
+     */
+    protected function getPassHistoryChangeDate($user=false) {
+    	if(!$user && $_SERVER['REMOTE_USER']) $user = $_SERVER['REMOTE_USER'];
+    	
+    	return @filemtime($this->passhistorydir . utf8_encodeFN($user) .'.txt');
+    }
+    
+    /**
+     * saves the given password to the passHistory file
+     * 
+     * @param string $user
+     * @param string $pass
+     */
+    public function savePassword2PassHistory($user,$pass) {
+    	$passhistory = $this->getUserPassHistory($user);
+    	if(!$passhistory) {
+    		$passhistory = auth_cryptPassword($pass);
+    	} else {
+    		array_unshift($passhistory, auth_cryptPassword($pass));
+    		$passhistory = array_slice($passhistory, 0, $this->getConf('oldpass'));
+    		$passhistory = implode("\n", $passhistory);
+    	}
+
+    	io_saveFile($this->passhistorydir .utf8_encodeFN($user).'.txt', $passhistory);
+    }
+
 }
 
 /**

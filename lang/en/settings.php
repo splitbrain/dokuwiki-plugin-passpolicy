@@ -22,4 +22,9 @@ $lang['pools_upper']   = 'upper case letters';
 $lang['pools_numeric'] = 'numbers';
 $lang['pools_special'] = 'special chars (eg. !, $, #, %)';
 
+$lang['oldpass']     = 'Number of old passwords, which will be checked. 0 to disable checking of old passwords.';
+$lang['expire']      = 'Number in days of password interval. 0 to disable expiring passwords';
+$lang['expirewarn']  = 'Number in days the user will be informed before the password expires.';
+$lang['date_start']  = 'Set the beginning day when passwords will first expire after plugin installation, so that user are forced to change their password according to the passpolicy. This date is used to give the user a transition time to change their password after plugin installation. Setting the date to far future will disable expiring passwords. (Format YYYY-MM-DD)';
+
 //Setup VIM: ex: et ts=4 :
