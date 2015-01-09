@@ -7,7 +7,21 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
 
     protected $pluginsEnabled = array('passpolicy');
 
-    public function newPolicy($minl, $minp, $lower, $upper, $num, $special, $ucheck, $pron=true) {
+    /**
+     * Quickly create a custom policy
+     *
+     * @param int     $minl
+     * @param int     $minp
+     * @param boolean $lower
+     * @param boolean $upper
+     * @param boolean $num
+     * @param boolean $special
+     * @param boolean $ucheck
+     * @param boolean $pron
+     * @param bool    $nocom
+     * @return helper_plugin_passpolicy
+     */
+    public function newPolicy($minl, $minp, $lower, $upper, $num, $special, $ucheck, $pron=true, $nocom=true) {
         $policy                = plugin_load('helper', 'passpolicy');
         $policy->min_pools     = $minp;
         $policy->min_length    = $minl;
@@ -19,6 +33,7 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
         );
         $policy->usernamecheck = $ucheck;
         $policy->pronouncable = $pron;
+        $policy->nocommon = true;
 
         return $policy;
     }
@@ -44,6 +59,16 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
         $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('tested99!','comptessa'), '1 pool1, user check '.$policy->error);
         $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
+    }
+
+    public function test_nocommon(){
+        $policy = $this->newPolicy(6, 1, true, true, true, true, 0, true, true);
+        $this->assertTrue($policy->checkPolicy('bazzel', 'nope'));
+        $this->assertFalse($policy->checkPolicy('eyphed', 'nope'));
+        $this->assertEquals(helper_plugin_passpolicy::COMMON_VIOLATION, $policy->error);
+
+        $policy->nocommon = false;
+        $this->assertTrue($policy->checkPolicy('password', 'nope'));
     }
 
     public function test_minpools(){

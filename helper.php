@@ -25,6 +25,9 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     /** @var int minimum bit strength auto generated passwords should have */
     public $autobits = 64;
 
+    /** @var bool disallow common passwords */
+    public $nocommon = true;
+
     /** @var array allowed character pools */
     public $usepools = array(
         'lower'   => true,
@@ -54,6 +57,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     const LENGTH_VIOLATION   = 1;
     const POOL_VIOLATION     = 2;
     const USERNAME_VIOLATION = 4;
+    const COMMON_VIOLATION   = 8;
 
     /**
      * Constructor
@@ -66,6 +70,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->usernamecheck = $this->getConf('user');
         $this->autotype      = $this->getConf('autotype');
         $this->autobits      = $this->getConf('autobits');
+        $this->nocommon      = $this->getConf('nocommon');
 
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
@@ -136,6 +141,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             $text .= $this->getLang('user1')."\n";
         if($this->usernamecheck > 1)
             $text .= sprintf($this->getLang('user2'), $this->usernamecheck)."\n";
+        if($this->nocommon)
+            $text .= $this->getLang('nocommon');
 
         return trim($text);
     }
@@ -166,10 +173,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             return false;
         }
 
-        if($this->usernamecheck && $username) {
-            $pass     = utf8_strtolower($pass);
-            $username = utf8_strtolower($username);
+        $pass     = utf8_strtolower($pass);
+        $username = utf8_strtolower($username);
 
+        if($this->usernamecheck && $username) {
             // simplest case first
             if(utf8_stripspecials($pass, '', '\._\-:\*') == utf8_stripspecials($username, '', '\._\-:\*')) {
                 $this->error = helper_plugin_passpolicy::USERNAME_VIOLATION;
@@ -194,6 +201,14 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                     $this->error = helper_plugin_passpolicy::USERNAME_VIOLATION;
                     return false;
                 }
+            }
+        }
+
+        if($this->nocommon) {
+            $commons = file(__DIR__ . '/10k-common-passwords.txt');
+            if(in_array("$pass\n", $commons)){
+                $this->error = helper_plugin_passpolicy::COMMON_VIOLATION;
+                return false;
             }
         }
 

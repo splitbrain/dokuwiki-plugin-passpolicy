@@ -1,7 +1,7 @@
 base   passpolicy
 author Andreas Gohr
 email  andi@splitbrain.org
-date   2014-01-05
+date   2015-01-09
 name   passpolicy plugin
-desc   Integrates password policy settings and advanced passowrd generators into DokuWiki
+desc   Integrates password policy settings and advanced password generators into DokuWiki
 url    http://www.dokuwiki.org/plugin:passpolicy
