@@ -1,8 +1,8 @@
 jQuery(function () {
 
     var $passfield = jQuery('form input[type=password][name=pass], ' +
-                            'form input[type=password][name=newpass], ' +
-                            '#add_userpass, #modify_userpass');
+        'form input[type=password][name=newpass], ' +
+        '#add_userpass, #modify_userpass');
     if (!$passfield.length) return;
 
     /**
@@ -35,47 +35,50 @@ jQuery(function () {
 
         var variationCount = 0;
         for (var check in variations) {
-            variationCount += (variations[check] == true) ? 1 : 0;
+            variationCount += (variations[check]) ? 1 : 0;
         }
         score += (variationCount - 1) * 10;
 
         return parseInt(score);
     }
-    
+
     /**
      * check policy
      *
      * @param $field object jQuery object of the password field
      * @param indicator DomObject where the output should go
      */
-    function checkpolicy($field,indicator) {
-    	var pass = $field.val();
-    	
-    	jQuery.post(
-    		DOKU_BASE+'lib/exe/ajax.php',
-    		{
-    			call:'plugin_passpolicy',
-    			pass:pass
-    		},
-    		function(response){
-    			if(response === '1') {
-    				scoreit($field,indicator,true);
-    			} else {
-    				scoreit($field,indicator,false);
-    			}
-    		}
-    	);
+    function checkpolicy($field, indicator) {
+        var pass = $field.val();
+        var user = jQuery('form input[type=text][name=login]').val();
+
+        jQuery.post(
+            DOKU_BASE + 'lib/exe/ajax.php',
+            {
+                call: 'plugin_passpolicy',
+                pass: pass,
+                user: user
+            },
+            function (response) {
+                if (response === '1') {
+                    scoreit($field, indicator, true);
+                } else {
+                    scoreit($field, indicator, false);
+                }
+            }
+        );
     }
 
     /**
      * Apply scoring
      *
-     * @param $field object jQuery object of the password field
-     * @param indicator DomObject where the output should go
+     * @param {object} $field jQuery object of the password field
+     * @param {Node} indicator where the output should go
+     * @param {bool} policy check if policy is met
      */
-    function scoreit($field, indicator,policy) {
+    function scoreit($field, indicator, policy) {
         var score = scorePassword($field.val());
-        
+
         if (score > 80 && policy) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength3;
             indicator.className = 'passpolicy_strength3';
@@ -94,17 +97,20 @@ jQuery(function () {
     /**
      * Attach strength tester at the found password fields
      */
-    $passfield.each(function(){
+    $passfield.each(function () {
         var $field = jQuery(this);
 
         var indicator = document.createElement('p');
         indicator.className = 'passpolicy__indicator';
 
         $field.after(indicator);
-        $field.keyup(function(){ checkpolicy($field, indicator) });
-        $field.blur(function(){ checkpolicy($field, indicator) });
+        $field.keyup(function () {
+            checkpolicy($field, indicator)
+        });
+        $field.blur(function () {
+            checkpolicy($field, indicator)
+        });
     });
-
 
 
 });

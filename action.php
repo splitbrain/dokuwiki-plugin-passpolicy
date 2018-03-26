@@ -38,12 +38,12 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
         $event->stopPropagation();
         $event->preventDefault();
 
-        if(!$_SERVER['REMOTE_USER']) return;
-
         /* @var $INPUT \Input */
         global $INPUT;
         $pass = $INPUT->post->str('pass');
+        $user = $INPUT->post->str('user', $_SERVER['REMOTE_USER']);
 
+        /** @var helper_plugin_passpolicy $passpolicy */
         $passpolicy = $this->loadHelper('passpolicy');
         if(!$passpolicy->checkPolicy($pass, $_SERVER['REMOTE_USER'])) {
             // passpolicy not matched, throw error
@@ -57,8 +57,8 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
     /**
      * Print the password policy in forms that allow setting passwords
      *
-     * @param Doku_Event $event  event object by reference
-     * @param mixed      $param  [the parameters passed as fifth argument to register_hook() when this
+     * @param Doku_Event $event event object by reference
+     * @param mixed $param [the parameters passed as fifth argument to register_hook() when this
      *                           handler was registered]
      * @return void
      */
@@ -68,15 +68,15 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
 
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
-        $html       = '<p class="passpolicy_hint">'.$passpolicy->explainPolicy().'</p>';
+        $html = '<p class="passpolicy_hint">' . $passpolicy->explainPolicy() . '</p>';
         $event->data->insertElement(++$pos, $html);
     }
 
     /**
      * Check if a new password matches the set password policy
      *
-     * @param Doku_Event $event  event object by reference
-     * @param mixed      $param  [the parameters passed as fifth argument to register_hook() when this
+     * @param Doku_Event $event event object by reference
+     * @param mixed $param [the parameters passed as fifth argument to register_hook() when this
      *                           handler was registered]
      * @return void
      */
@@ -107,8 +107,8 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
     /**
      * Replace default password generator by policy aware one
      *
-     * @param Doku_Event $event  event object by reference
-     * @param mixed      $param  [the parameters passed as fifth argument to register_hook() when this
+     * @param Doku_Event $event event object by reference
+     * @param mixed $param [the parameters passed as fifth argument to register_hook() when this
      *                           handler was registered]
      * @return void
      */
