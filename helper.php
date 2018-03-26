@@ -105,7 +105,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         if($pw && $this->checkPolicy($pw, $username)) return $pw;
 
         // still here? we might have clashed with the user name by accident
-        if($try < 3) return $this->generatePassword($try++);
+        if($try < 3) return $this->generatePassword($username, $try + 1);
 
         // still here? now we have a real problem
         throw new Exception('can\'t create a random password matching the password policy');
