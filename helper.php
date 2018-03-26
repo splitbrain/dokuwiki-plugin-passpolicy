@@ -126,7 +126,6 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         if($conf['lang'] != 'en') @include($path.'/lang/'.$conf['lang'].'/settings.php');
 
         // load pool names
-        $confplugin = plugin_load('admin', 'config');
         $pools      = array();
         foreach($this->usepools as $pool => $on) {
             if($on) $pools[] = $lang['pools_'.$pool];

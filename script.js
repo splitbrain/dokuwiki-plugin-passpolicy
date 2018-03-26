@@ -74,22 +74,27 @@ jQuery(function () {
      *
      * @param {object} $field jQuery object of the password field
      * @param {Node} indicator where the output should go
-     * @param {bool} policy check if policy is met
+     * @param {bool} policy true if the policy is met
      */
     function scoreit($field, indicator, policy) {
         var score = scorePassword($field.val());
 
-        if (score > 80 && policy) {
+        if (score > 80) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength3;
             indicator.className = 'passpolicy_strength3';
-        } else if (policy) {
+        } else if (score >= 60) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength2;
             indicator.className = 'passpolicy_strength2';
-        } else if (!policy && score >= 30) {
+        } else if (score >= 30) {
             indicator.innerHTML = LANG.plugins.passpolicy.strength1;
             indicator.className = 'passpolicy_strength1';
         } else {
             indicator.innerHTML = LANG.plugins.passpolicy.strength0;
+            indicator.className = 'passpolicy_strength0';
+        }
+
+        if(!policy) {
+            indicator.innerHTML += LANG.plugins.passpolicy.nopolicy;
             indicator.className = 'passpolicy_strength0';
         }
     }

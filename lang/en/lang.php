@@ -16,5 +16,6 @@ $lang['js']['strength0']  = 'very weak';
 $lang['js']['strength1']  = 'weak';
 $lang['js']['strength2']  = 'decent';
 $lang['js']['strength3']  = 'strong';
+$lang['js']['nopolicy']   = ', policy not met';
 
 //Setup VIM: ex: et ts=4 :
