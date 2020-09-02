@@ -93,7 +93,7 @@ jQuery(function () {
             indicator.className = 'passpolicy_strength0';
         }
 
-        if(!policy) {
+        if (!policy) {
             indicator.innerHTML += LANG.plugins.passpolicy.nopolicy;
             indicator.className = 'passpolicy_strength0';
         }
