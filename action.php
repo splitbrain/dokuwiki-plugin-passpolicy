@@ -45,7 +45,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin {
 
         /** @var helper_plugin_passpolicy $passpolicy */
         $passpolicy = $this->loadHelper('passpolicy');
-        if(!$passpolicy->checkPolicy($pass, $_SERVER['REMOTE_USER'])) {
+        if(!$passpolicy->checkPolicy($pass, $user)) {
             // passpolicy not matched, throw error
             echo '0';
         } else {
