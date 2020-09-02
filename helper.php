@@ -7,10 +7,6 @@
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
-
-// must be run within Dokuwiki
-if(!defined('DOKU_INC')) die();
-
 class helper_plugin_passpolicy extends DokuWiki_Plugin {
 
     /** @var int number of character pools that have to be used at least */
@@ -27,6 +23,9 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
 
     /** @var bool disallow common passwords */
     public $nocommon = true;
+
+    /** @var bool disallow leaked passwords */
+    public $noleaked = true;
 
     /** @var array allowed character pools */
     public $usepools = array(
@@ -58,6 +57,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
     const POOL_VIOLATION     = 2;
     const USERNAME_VIOLATION = 4;
     const COMMON_VIOLATION   = 8;
+    const LEAK_VIOLATION     = 16;
 
     /**
      * Constructor
@@ -71,6 +71,7 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         $this->autotype      = $this->getConf('autotype');
         $this->autobits      = $this->getConf('autobits');
         $this->nocommon      = $this->getConf('nocommon');
+        $this->noleaked      = $this->getConf('noleaked');
 
         $opts = explode(',', $this->getConf('pools'));
         if(count($opts)) { // ignore empty pool setups
@@ -142,6 +143,8 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
             $text .= sprintf($this->getLang('user2'), $this->usernamecheck)."\n";
         if($this->nocommon)
             $text .= $this->getLang('nocommon');
+        if($this->noleaked)
+            $text .= $this->getLang('noleaked');
 
         return trim($text);
     }
@@ -209,6 +212,11 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
                 $this->error = helper_plugin_passpolicy::COMMON_VIOLATION;
                 return false;
             }
+        }
+
+        if($this->noleaked && $this->isLeaked($pass)) {
+            $this->error = helper_plugin_passpolicy::LEAK_VIOLATION;
+            return false;
         }
 
         return true;
@@ -468,6 +476,33 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin {
         // add our own word list to fill up
         $this->wordlist += file(dirname(__FILE__).'/words.txt', FILE_IGNORE_NEW_LINES);
         $this->wordlistlength = count($this->wordlist);
+    }
+
+    /**
+     * Check if the given password has been leaked
+     *
+     * Uses k-anonymity
+     *
+     * @param string $password
+     * @return bool
+     */
+    protected function isLeaked($password) {
+        $sha1 = sha1($password);
+        $prefix = substr($sha1, 0, 5);
+        $url =  "https://api.pwnedpasswords.com/range/$prefix";
+        $http = new DokuHTTPClient();
+        $http->timeout = 5;
+        $list = $http->get($url);
+        if(!$list) return false; // we didn't get a proper response, assume the password is okay
+
+        $results = explode("\n",$list);
+        foreach ($results as $result) {
+            list($result,) = explode(':', $result); // strip off the number
+            $result = $prefix.strtolower($result);
+            if($sha1 == $result) return true; // leak found
+        }
+
+        return false;
     }
 }
 

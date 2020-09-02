@@ -11,6 +11,7 @@ $lang['pools']      = 'Your password needs to use characters from at least %d of
 $lang['user1']      = 'Your password may not contain your username.';
 $lang['user2']      = 'Your password may only use %d or less consecutive characters that appear in your username.';
 $lang['nocommon']   = 'Your password may not be one of the 10,000 most commonly used passwords.';
+$lang['noleaked']   = 'Your password may not have been used in any known password leak.';
 
 $lang['js']['strength0']  = 'very weak';
 $lang['js']['strength1']  = 'weak';

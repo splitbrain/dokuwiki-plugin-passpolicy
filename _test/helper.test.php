@@ -10,18 +10,20 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
     /**
      * Quickly create a custom policy
      *
-     * @param int     $minl
-     * @param int     $minp
+     * @param int $minl
+     * @param int $minp
      * @param boolean $lower
      * @param boolean $upper
      * @param boolean $num
      * @param boolean $special
      * @param boolean $ucheck
      * @param boolean $pron
-     * @param bool    $nocom
+     * @param bool $nocom
+     * @param bool $noleak
      * @return helper_plugin_passpolicy
      */
-    public function newPolicy($minl, $minp, $lower, $upper, $num, $special, $ucheck, $pron=true, $nocom=true) {
+    public function newPolicy($minl, $minp, $lower, $upper, $num, $special, $ucheck, $pron=true, $nocom=true, $noleak=false) {
+        /** @var helper_plugin_passpolicy $policy */
         $policy                = plugin_load('helper', 'passpolicy');
         $policy->min_pools     = $minp;
         $policy->min_length    = $minl;
@@ -33,7 +35,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
         );
         $policy->usernamecheck = $ucheck;
         $policy->pronouncable = $pron;
-        $policy->nocommon = true;
+        $policy->nocommon = $nocom;
+        $policy->noleaked = $noleak;
 
         return $policy;
     }
@@ -69,6 +72,16 @@ class helper_plugin_passpolicy_test extends DokuWikiTest {
 
         $policy->nocommon = false;
         $this->assertTrue($policy->checkPolicy('password', 'nope'));
+    }
+
+    public function test_noleak(){
+        $policy = $this->newPolicy(6, 1, true, true, true, true, 0, false, true, true);
+        $this->assertTrue($policy->checkPolicy('sadf asfd s as asf a afafaa fadfsa fas', 'nope'));
+        $this->assertFalse($policy->checkPolicy('qwertzuiop', 'nope'));
+        $this->assertEquals(helper_plugin_passpolicy::LEAK_VIOLATION, $policy->error);
+
+        $policy->noleaked = false;
+        $this->assertTrue($policy->checkPolicy('qwertzuiop', 'nope'));
     }
 
     public function test_minpools(){
