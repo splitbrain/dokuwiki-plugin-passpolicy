@@ -17,6 +17,9 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
      */
     public function register(Doku_Event_Handler $controller)
     {
+        $controller->register_hook('FORM_REGISTER_OUTPUT', 'BEFORE', $this, 'handleForms');
+        $controller->register_hook('FORM_UPDATEPROFILE_OUTPUT', 'BEFORE', $this, 'handleForms');
+        $controller->register_hook('FORM_RESENDPWD_OUTPUT', 'BEFORE', $this, 'handleForms');
 
         $controller->register_hook('HTML_REGISTERFORM_OUTPUT', 'BEFORE', $this, 'handleForms');
         $controller->register_hook('HTML_UPDATEPROFILEFORM_OUTPUT', 'BEFORE', $this, 'handleForms');
@@ -67,13 +70,23 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
      */
     public function handleForms(Doku_Event $event, $param)
     {
-        $pos = $event->data->findElementByAttribute('name', 'passchk');
+        if (substr($event->name, 0, 4) === 'FORM') {
+            // applicable to development snapshot 2020-10-13 or later
+            $pos = $event->data->findPositionByAttribute('name', 'passchk');
+        } else {
+            // applicable to 2020-07-29 "Hogfather" and older
+            $pos = $event->data->findElementByAttribute('name', 'passchk');
+        }
         if (!$pos) return; // no password repeat field found
 
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
         $html = '<p class="passpolicy_hint">' . $passpolicy->explainPolicy() . '</p>';
-        $event->data->insertElement(++$pos, $html);
+        if (substr($event->name, 0, 4) === 'FORM') {
+            $event->data->addHTML($html, ++$pos);
+        }
+            $event->data->insertElement(++$pos, $html);
+        }
     }
 
     /**
