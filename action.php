@@ -70,7 +70,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
      */
     public function handleForms(Doku_Event $event, $param)
     {
-        if (substr($event->name, 0, 4) === 'FORM') {
+        if (is_a($event->data, \dokuwiki\Form\Form::class)) {
             // applicable to development snapshot 2020-10-13 or later
             $pos = $event->data->findPositionByAttribute('name', 'passchk');
         } else {
@@ -82,7 +82,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
         $html = '<p class="passpolicy_hint">' . $passpolicy->explainPolicy() . '</p>';
-        if (substr($event->name, 0, 4) === 'FORM') {
+        if (is_a($event->data, \dokuwiki\Form\Form::class)) {
             $event->data->addHTML($html, ++$pos);
         } else {
             $event->data->insertElement(++$pos, $html);
