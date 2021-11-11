@@ -84,7 +84,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
         $html = '<p class="passpolicy_hint">' . $passpolicy->explainPolicy() . '</p>';
         if (substr($event->name, 0, 4) === 'FORM') {
             $event->data->addHTML($html, ++$pos);
-        }
+        } else {
             $event->data->insertElement(++$pos, $html);
         }
     }
