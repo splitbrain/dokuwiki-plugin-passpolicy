@@ -5,10 +5,10 @@
  * @author Andreas Gohr <andi@splitbrain.org>
  */
 
-$conf['minlen']   = 8;
-$conf['pools']    = 'lower,numeric,special';
+$conf['minlen'] = 8;
+$conf['pools'] = 'lower,numeric,special';
 $conf['minpools'] = 2;
-$conf['user']     = 1;
+$conf['user'] = 1;
 $conf['nocommon'] = 1;
 $conf['noleaked'] = 1;
 

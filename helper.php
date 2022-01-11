@@ -181,8 +181,10 @@ class helper_plugin_passpolicy extends DokuWiki_Plugin
         if (!empty($this->usepools['lower'])) $matched_pools += (int)preg_match('/[a-z]/', $pass);
         if (!empty($this->usepools['upper'])) $matched_pools += (int)preg_match('/[A-Z]/', $pass);
         if (!empty($this->usepools['numeric'])) $matched_pools += (int)preg_match('/[0-9]/', $pass);
-        if (!empty($this->usepools['special'])) $matched_pools += (int)preg_match('/[^A-Za-z0-9]/',
-            $pass); // we consider everything else special
+        if (!empty($this->usepools['special'])) {
+            $matched_pools += (int)preg_match('/[^A-Za-z0-9]/',
+                $pass);
+        } // we consider everything else special
         if ($matched_pools < $this->min_pools) {
             $this->error = helper_plugin_passpolicy::POOL_VIOLATION;
             return false;
