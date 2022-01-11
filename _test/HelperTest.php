@@ -1,10 +1,14 @@
 <?php
 
+namespace dokuwiki\plugin\passpolicy\test;
+
+use dokuwiki\Utf8\Clean;
+
 /**
  * @group plugin_passpolicy
  * @group plugins
  */
-class helper_plugin_passpolicy_test extends DokuWikiTest
+class HelperTest extends \DokuWikiTest
 {
 
     protected $pluginsEnabled = array('passpolicy');
@@ -22,7 +26,7 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
      * @param boolean $pron
      * @param bool $nocom
      * @param bool $noleak
-     * @return helper_plugin_passpolicy
+     * @return \helper_plugin_passpolicy
      */
     public function newPolicy(
         $minl,
@@ -36,7 +40,7 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $nocom = true,
         $noleak = false
     ) {
-        /** @var helper_plugin_passpolicy $policy */
+        /** @var \helper_plugin_passpolicy $policy */
         $policy = plugin_load('helper', 'passpolicy');
         $policy->min_pools = $minp;
         $policy->min_length = $minl;
@@ -60,23 +64,23 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertTrue($policy->checkPolicy('tested', 'tested'), '1 pool, no user check ' . $policy->error);
         $this->assertFalse($policy->checkPolicy('test', 'tested'),
             '1 pool, no user check, but too short ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::LENGTH_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::LENGTH_VIOLATION, $policy->error);
         $this->assertTrue($policy->checkPolicy('tested99!', 'tested'), '1 pool, no user check ' . $policy->error);
 
         $policy = $this->newPolicy(6, 3, true, true, true, true, 0);
         $this->assertFalse($policy->checkPolicy('tested', 'tested'), '3 pools, no user check ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
         $this->assertTrue($policy->checkPolicy('tested99!', 'tested'), '3 pools, no user check ' . $policy->error);
 
         $policy = $this->newPolicy(6, 1, true, true, true, true, 2);
         $this->assertFalse($policy->checkPolicy('tested', 'tested'), '1 pool, user check ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('tested99!', 'tested'), '1 pool, user check ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('tested', 'untested'), '1 pool, user check ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('tested99!', 'comptessa'), '1 pool1, user check ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::USERNAME_VIOLATION, $policy->error);
     }
 
     public function test_nocommon()
@@ -84,7 +88,7 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $policy = $this->newPolicy(6, 1, true, true, true, true, 0, true, true);
         $this->assertTrue($policy->checkPolicy('bazzel', 'nope'));
         $this->assertFalse($policy->checkPolicy('eyphed', 'nope'));
-        $this->assertEquals(helper_plugin_passpolicy::COMMON_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::COMMON_VIOLATION, $policy->error);
 
         $policy->nocommon = false;
         $this->assertTrue($policy->checkPolicy('password', 'nope'));
@@ -95,7 +99,7 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $policy = $this->newPolicy(6, 1, true, true, true, true, 0, false, true, true);
         $this->assertTrue($policy->checkPolicy('sadf asfd s as asf a afafaa fadfsa fas', 'nope'));
         $this->assertFalse($policy->checkPolicy('qwertzuiop', 'nope'));
-        $this->assertEquals(helper_plugin_passpolicy::LEAK_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::LEAK_VIOLATION, $policy->error);
 
         $policy->noleaked = false;
         $this->assertTrue($policy->checkPolicy('qwertzuiop', 'nope'));
@@ -120,24 +124,24 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertTrue($policy->checkPolicy('lowerUPPER123', 'tester'), '2 required, 3 given ' . $policy->error);
         $this->assertTrue($policy->checkPolicy('lowerUPPER', 'tester'), '2 required, 2 given ' . $policy->error);
         $this->assertFalse($policy->checkPolicy('lower', 'tester'), '2 required, 1 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
 
         $policy = $this->newPolicy(3, 3, true, true, true, true, 0);
         $this->assertTrue($policy->checkPolicy('lowerUPPER123!"', 'tester'), '3 required, 4 given ' . $policy->error);
         $this->assertTrue($policy->checkPolicy('lowerUPPER123', 'tester'), '3 required, 3 given ' . $policy->error);
         $this->assertFalse($policy->checkPolicy('lowerUPPER', 'tester'), '3 required, 2 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('lower', 'tester'), '3 required, 1 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
 
         $policy = $this->newPolicy(3, 4, true, true, true, true, 0);
         $this->assertTrue($policy->checkPolicy('lowerUPPER123!"', 'tester'), '4 required, 4 given ' . $policy->error);
         $this->assertFalse($policy->checkPolicy('lowerUPPER123', 'tester'), '4 required, 3 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('lowerUPPER', 'tester'), '4 required, 2 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
         $this->assertFalse($policy->checkPolicy('lower', 'tester'), '4 required, 1 given ' . $policy->error);
-        $this->assertEquals(helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
+        $this->assertEquals(\helper_plugin_passpolicy::POOL_VIOLATION, $policy->error);
     }
 
     public function test_selfcheck()
@@ -148,8 +152,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 6, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 6, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -159,8 +163,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -170,8 +174,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 6, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 6, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -181,8 +185,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -192,8 +196,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -203,8 +207,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -214,8 +218,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
 
@@ -225,8 +229,8 @@ class helper_plugin_passpolicy_test extends DokuWikiTest
         $this->assertNotEquals($pw1, $pw2, 'randomness broken');
         $this->assertTrue(strlen($pw1) >= 18, 'pw too short');
         $this->assertTrue(strlen($pw2) >= 18, 'pw too short');
-        $this->assertTrue(utf8_isASCII($pw1), 'pw contains non-ASCII, something went wrong');
-        $this->assertTrue(utf8_isASCII($pw2), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw1), 'pw contains non-ASCII, something went wrong');
+        $this->assertTrue(Clean::isASCII($pw2), 'pw contains non-ASCII, something went wrong');
 
         //echo "\n$pw1\n$pw2\n";
     }
