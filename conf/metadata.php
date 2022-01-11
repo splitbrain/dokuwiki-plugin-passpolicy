@@ -14,3 +14,5 @@ $meta['noleaked'] = array('onoff');
 
 $meta['autotype'] = array('multichoice', '_choices' => array('random', 'phrase', 'pronouncable'));
 $meta['autobits'] = array('numeric', '_min' => 24);
+
+$meta['supressuserhints'] = array('onoff');

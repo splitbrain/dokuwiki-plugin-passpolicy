@@ -15,6 +15,8 @@ $lang['noleaked'] = 'Check password against the haveibeenpwned.com passwords API
 $lang['autotype'] = 'How to generate passwords?';
 $lang['autobits'] = 'Minimal number of bits of information to generate passwords. The higher, the more secure but harder to remember. Minimum: 24.';
 
+$lang['supressuserhints'] = 'The reset password mechanism usually tells if the given user account exists or not. This supresses all hints on that.';
+
 $lang['autotype_o_random'] = 'random password';
 $lang['autotype_o_pronouncable'] = 'pronouncable password';
 $lang['autotype_o_phrase'] = 'multi word pass phrase';
@@ -23,5 +25,3 @@ $lang['pools_lower'] = 'lower case letters';
 $lang['pools_upper'] = 'upper case letters';
 $lang['pools_numeric'] = 'numbers';
 $lang['pools_special'] = 'special chars (eg. !, $, #, %)';
-
-//Setup VIM: ex: et ts=4 :

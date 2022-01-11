@@ -1,5 +1,8 @@
 <?php
 
+use dokuwiki\Action\Exception\ActionException;
+use dokuwiki\Action\Resendpwd;
+
 /**
  * DokuWiki Plugin passpolicy (Action Component)
  *
@@ -30,6 +33,11 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
         $controller->register_hook('AUTH_PASSWORD_GENERATE', 'BEFORE', $this, 'handlePassgen');
 
         $controller->register_hook('AJAX_CALL_UNKNOWN', 'BEFORE', $this, 'handleAjax');
+
+        if ($this->getConf('supressuserhints')) {
+            $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handleResendPwd');
+            $controller->register_hook('TPL_ACT_UNKNOWN', 'BEFORE', $this, 'handleResendPwdUI');
+        }
     }
 
     /**
@@ -134,5 +142,71 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
 
         $event->data['password'] = $passpolicy->generatePassword($event->data['foruser']);
         $event->preventDefault();
+    }
+
+    /**
+     * Intercept the resendpwd action
+     *
+     * This supresses all hints on if a user exists or not
+     *
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handleResendPwd(Doku_Event $event, $param)
+    {
+        $act = act_clean($event->data);
+        if ($act != 'resendpwd') return;
+
+        $event->preventDefault();
+
+        $action = new Resendpwd();
+        try {
+            $action->checkPreconditions();
+        } catch (ActionException $ignored) {
+            $event->data = 'show';
+            return;
+        }
+
+        try {
+            $action->preProcess();
+        } catch (ActionException $ignored) {
+        }
+
+        $this->fixResendMessages();
+    }
+
+    /**
+     * Reuse the standard action UI for ResendPwd
+     *
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handleResendPwdUI(Doku_Event $event, $param)
+    {
+        $act = act_clean($event->data);
+        if ($act != 'resendpwd') return;
+        $event->preventDefault();
+        (new Resendpwd)->tplContent();
+    }
+
+    /**
+     * Replaces the resendPwd messages with neutral ones
+     *
+     * @return void
+     */
+    protected function fixResendMessages()
+    {
+        global $MSG;
+        global $lang;
+
+        foreach ((array)$MSG as $key => $info) {
+            if (
+                $info['msg'] == $lang['resendpwdnouser'] or
+                $info['msg'] == $lang['resendpwdconfirm']
+            ) {
+                unset($MSG[$key]);
+                msg($this->getLang('resendpwd'), 1);
+            }
+        }
     }
 }

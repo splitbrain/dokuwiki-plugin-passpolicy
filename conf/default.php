@@ -14,3 +14,5 @@ $conf['noleaked'] = 1;
 
 $conf['autotype'] = 'random';
 $conf['autobits'] = 44;
+
+$conf['supressuserhints'] = 0;
