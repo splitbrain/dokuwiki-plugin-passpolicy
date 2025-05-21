@@ -51,7 +51,7 @@ class HelperTest extends \DokuWikiTest
             'special' => $special,
         );
         $policy->usernamecheck = $ucheck;
-        $policy->pronouncable = $pron;
+        $policy->autotype = $pron ? 'pronounceable' : 'random';
         $policy->nocommon = $nocom;
         $policy->noleaked = $noleak;
 

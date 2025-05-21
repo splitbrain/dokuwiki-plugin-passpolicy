@@ -1,5 +1,9 @@
 <?php
 
+use dokuwiki\Extension\ActionPlugin;
+use dokuwiki\Extension\EventHandler;
+use dokuwiki\Extension\Event;
+use dokuwiki\Form\Form;
 use dokuwiki\Action\Exception\ActionException;
 use dokuwiki\Action\Resendpwd;
 
@@ -9,16 +13,15 @@ use dokuwiki\Action\Resendpwd;
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Andreas Gohr <andi@splitbrain.org>
  */
-class action_plugin_passpolicy extends DokuWiki_Action_Plugin
+class action_plugin_passpolicy extends ActionPlugin
 {
-
     /**
      * Registers a callback function for a given event
      *
-     * @param Doku_Event_Handler $controller DokuWiki's event controller object
+     * @param EventHandler $controller DokuWiki's event controller object
      * @return void
      */
-    public function register(Doku_Event_Handler $controller)
+    public function register(EventHandler $controller)
     {
         $controller->register_hook('FORM_REGISTER_OUTPUT', 'BEFORE', $this, 'handleForms');
         $controller->register_hook('FORM_UPDATEPROFILE_OUTPUT', 'BEFORE', $this, 'handleForms');
@@ -43,10 +46,10 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
     /**
      * Handle Ajax for the Password strength check
      *
-     * @param Doku_Event $event
+     * @param Event $event
      * @param $param
      */
-    public function handleAjax(Doku_Event $event, $param)
+    public function handleAjax(Event $event, $param)
     {
         if ($event->data !== 'plugin_passpolicy') {
             return;
@@ -73,12 +76,12 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
     /**
      * Print the password policy in forms that allow setting passwords
      *
-     * @param Doku_Event $event event object
+     * @param Event $event event object
      * @param mixed $param
      */
-    public function handleForms(Doku_Event $event, $param)
+    public function handleForms(Event $event, $param)
     {
-        if (is_a($event->data, \dokuwiki\Form\Form::class)) {
+        if (is_a($event->data, Form::class)) {
             // applicable to development snapshot 2020-10-13 or later
             $pos = $event->data->findPositionByAttribute('name', 'passchk');
         } else {
@@ -90,7 +93,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
         $html = '<p class="passpolicy_hint">' . $passpolicy->explainPolicy() . '</p>';
-        if (is_a($event->data, \dokuwiki\Form\Form::class)) {
+        if (is_a($event->data, Form::class)) {
             $event->data->addHTML($html, ++$pos);
         } else {
             $event->data->insertElement(++$pos, $html);
@@ -100,10 +103,10 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
     /**
      * Check if a new password matches the set password policy
      *
-     * @param Doku_Event $event event object
+     * @param Event $event event object
      * @param mixed $param
      */
-    public function handlePasschange(Doku_Event $event, $param)
+    public function handlePasschange(Event $event, $param)
     {
         if ($event->data['type'] == 'create') {
             $user = $event->data['params'][0];
@@ -131,11 +134,11 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
     /**
      * Replace default password generator by policy aware one
      *
-     * @param Doku_Event $event event object
+     * @param Event $event event object
      * @param mixed $param
      * @throws Exception
      */
-    public function handlePassgen(Doku_Event $event, $param)
+    public function handlePassgen(Event $event, $param)
     {
         /** @var $passpolicy helper_plugin_passpolicy */
         $passpolicy = plugin_load('helper', 'passpolicy');
@@ -149,10 +152,10 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
      *
      * This supresses all hints on if a user exists or not
      *
-     * @param Doku_Event $event
+     * @param Event $event
      * @param $param
      */
-    public function handleResendPwd(Doku_Event $event, $param)
+    public function handleResendPwd(Event $event, $param)
     {
         $act = act_clean($event->data);
         if ($act != 'resendpwd') return;
@@ -178,15 +181,15 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
     /**
      * Reuse the standard action UI for ResendPwd
      *
-     * @param Doku_Event $event
+     * @param Event $event
      * @param $param
      */
-    public function handleResendPwdUI(Doku_Event $event, $param)
+    public function handleResendPwdUI(Event $event, $param)
     {
         $act = act_clean($event->data);
         if ($act != 'resendpwd') return;
         $event->preventDefault();
-        (new Resendpwd)->tplContent();
+        (new Resendpwd())->tplContent();
     }
 
     /**
@@ -201,8 +204,7 @@ class action_plugin_passpolicy extends DokuWiki_Action_Plugin
 
         foreach ((array)$MSG as $key => $info) {
             if (
-                $info['msg'] == $lang['resendpwdnouser'] or
-                $info['msg'] == $lang['resendpwdconfirm']
+                $info['msg'] == $lang['resendpwdnouser'] || $info['msg'] == $lang['resendpwdconfirm']
             ) {
                 unset($MSG[$key]);
                 msg($this->getLang('resendpwd'), 1);
