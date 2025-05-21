@@ -3,7 +3,6 @@
 use dokuwiki\Extension\Plugin;
 use dokuwiki\HTTP\DokuHTTPClient;
 use dokuwiki\Search\Indexer;
-
 use dokuwiki\Utf8\PhpString;
 use dokuwiki\Utf8\Clean;
 
@@ -547,7 +546,7 @@ class helper_plugin_passpolicy extends Plugin
 class helper_plugin_passpolicy__index extends Indexer
 {
     /** @inheritDoc */
-    public function getIndex($idx, $suffix)
+    protected function getIndex($idx, $suffix)
     {
         return parent::getIndex($idx, $suffix);
     }
